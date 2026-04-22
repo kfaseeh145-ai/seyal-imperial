@@ -1,18 +1,23 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
+const path = require('path');
 const connectDB = require('./config/db');
 const { errorHandler, notFound } = require('./middleware/errorMiddleware');
 
 // Load env vars
-dotenv.config();
+// Prefer `backend/.env` when starting from repo root (npm run server).
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 // Connect to database (Disable locally if you don't have MongoDB set up yet)
 connectDB();
 
 const app = express();
 
-// Body parser
+// Stripe webhook needs the raw body. It must be registered BEFORE express.json().
+app.use('/api/orders/stripe/webhook', express.raw({ type: 'application/json' }));
+
+// Body parser (for normal JSON routes)
 app.use(express.json());
 
 // Enable CORS securely for production domains

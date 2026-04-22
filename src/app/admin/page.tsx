@@ -8,7 +8,7 @@ import { Loader2 } from 'lucide-react';
 export default function AdminDashboard() {
     const { user, isAuthenticated } = useAuth();
     const router = useRouter();
-    const [orders, setOrders] = useState([]);
+    const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {

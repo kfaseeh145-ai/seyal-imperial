@@ -14,7 +14,7 @@ export function CartDrawer() {
   const router = useRouter();
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
-  // Calls the backend to create an order
+  // Routes to secure checkout (shipping + payment)
   const handleCheckout = async () => {
     if (!isAuthenticated || !user) {
       alert("You must be logged in to access the secure vault.");
@@ -25,34 +25,11 @@ export function CartDrawer() {
 
     setCheckoutLoading(true);
     try {
-      const orderItems = items.map(item => ({
-        name: item.name,
-        qty: item.quantity,
-        image: item.imageUrl,
-        price: item.price,
-        product: item.id
-      }));
-
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/orders/checkout`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`
-        },
-        body: JSON.stringify({
-          orderItems
-        })
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.message || 'Failed to create checkout session');
-      
-      // Redirect to Stripe or the Success Simulator
-      window.location.href = data.url;
-      
-    } catch (err: any) {
-      alert(`Error during checkout: ${err.message}`);
+      setIsOpen(false);
+      router.push('/checkout');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      alert(`Error during checkout: ${message}`);
       console.error(err);
     } finally {
       setCheckoutLoading(false);
@@ -148,9 +125,22 @@ export function CartDrawer() {
                   <span className="text-sm uppercase tracking-[0.2em] text-gray-400">Total</span>
                   <span className="text-2xl font-serif text-white tracking-widest">${getCartTotal().toFixed(2)}</span>
                 </div>
-                <Button size="lg" className="w-full" onClick={handleCheckout}>
-                  Secure Checkout
-                </Button>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Button size="lg" className="w-full" onClick={handleCheckout} disabled={checkoutLoading}>
+                  {checkoutLoading ? 'Opening Checkout…' : 'Secure Checkout'}
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      setIsOpen(false);
+                      router.push(isAuthenticated ? '/orders' : '/login');
+                    }}
+                  >
+                    My Orders
+                  </Button>
+                </div>
               </div>
             )}
           </motion.div>
