@@ -10,7 +10,8 @@ import { useAuth } from '@/store/useAuth';
 export default function OrderReceiptPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isInitialized } = useAuth();
+
 
   const apiBase = useMemo(
     () => process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
