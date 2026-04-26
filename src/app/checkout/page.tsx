@@ -11,11 +11,12 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { user, isAuthenticated, isInitialized } = useAuth();
   
-  useEffect(() => {
-    if (isInitialized && !isAuthenticated) {
-      router.push('/login?redirect=checkout');
-    }
-  }, [isInitialized, isAuthenticated, router]);
+  // Removed auth redirect to allow guest checkout
+  // useEffect(() => {
+  //   if (isInitialized && !isAuthenticated) {
+  //     router.push('/login?redirect=checkout');
+  //   }
+  // }, [isInitialized, isAuthenticated, router]);
 
 
   const { 
@@ -29,6 +30,9 @@ export default function CheckoutPage() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const [guestName, setGuestName] = useState('');
+  const [guestEmail, setGuestEmail] = useState('');
 
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
@@ -59,14 +63,15 @@ export default function CheckoutPage() {
   const canSubmit =
     !loading &&
     items.length > 0 &&
+    (isAuthenticated || (guestName.trim() && guestEmail.trim())) &&
     address.trim() &&
     phone.trim() &&
     city.trim() &&
     country.trim();
 
   const submit = async () => {
-    if (!isAuthenticated || !user?.token) {
-      router.push('/login');
+    if (!isAuthenticated && (!guestName || !guestEmail)) {
+      setError('Please provide your name and email for guest checkout.');
       return;
     }
     if (!canSubmit) return;
@@ -83,8 +88,8 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           orderItems,
           shippingAddress: { 
-            name: user.name, // Save the name directly with the order
-            email: user.email, // Save the email directly with the order
+            name: isAuthenticated ? user?.name : guestName, 
+            email: isAuthenticated ? user?.email : guestEmail, 
             address, 
             city, 
             postalCode, 
@@ -95,7 +100,7 @@ export default function CheckoutPage() {
           paymentMethod: 'CashOnDelivery',
           isGiftPack,
           totalPrice: Number((getCartTotal() + (isGiftPack ? GIFT_PACK_PRICE : 0)).toFixed(2)),
-          user_id: user.id,
+          user_id: isAuthenticated ? user?.id : null,
         }),
 
       });
@@ -151,6 +156,42 @@ export default function CheckoutPage() {
 
         <div className="bg-[#0a0a0a] border border-white/5 rounded-sm p-6 md:p-8 space-y-10 shadow-2xl">
           <div>
+            <h2 className="text-xs uppercase tracking-[0.25em] text-gray-500 mb-4">
+              Personal Information
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-10">
+              {!isAuthenticated ? (
+                <>
+                  <div>
+                    <label className="block text-xs uppercase tracking-widest text-gray-500 mb-2">Full Name</label>
+                    <input
+                      value={guestName}
+                      onChange={(e) => setGuestName(e.target.value)}
+                      className="w-full bg-black border border-white/10 text-white px-4 py-3 focus:outline-none focus:border-[var(--color-gold)] transition-colors"
+                      placeholder="John Doe"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs uppercase tracking-widest text-gray-500 mb-2">Email Address</label>
+                    <input
+                      type="email"
+                      value={guestEmail}
+                      onChange={(e) => setGuestEmail(e.target.value)}
+                      className="w-full bg-black border border-white/10 text-white px-4 py-3 focus:outline-none focus:border-[var(--color-gold)] transition-colors"
+                      placeholder="john@example.com"
+                      required
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="md:col-span-2 p-4 border border-white/5 bg-white/5 rounded-sm">
+                  <p className="text-gray-400 text-xs uppercase tracking-widest">Logged in as</p>
+                  <p className="text-white font-medium mt-1">{user?.name} ({user?.email})</p>
+                </div>
+              )}
+            </div>
+
             <h2 className="text-xs uppercase tracking-[0.25em] text-gray-500 mb-4">
               Shipping Address
             </h2>

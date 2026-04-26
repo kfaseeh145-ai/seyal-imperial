@@ -26,10 +26,13 @@ export default function OrderReceiptPage() {
 
   useEffect(() => {
     if (!isInitialized) return; // Wait for auth to initialize
-    if (!isAuthenticated || !user?.token) {
-      router.push('/login');
-      return;
-    }
+    
+    // Removed mandatory login to allow guest receipt viewing
+    // if (!isAuthenticated || !user?.token) {
+    //   router.push('/login');
+    //   return;
+    // }
+
     if (!orderId) return;
 
     const run = async () => {

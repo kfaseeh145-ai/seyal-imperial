@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabase, createServerSupabase } from '@/lib/supabase';
 
 export async function GET(
   request: Request,
@@ -35,6 +35,8 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const authHeader = request.headers.get('Authorization') || '';
+  const serverSupabase = createServerSupabase(authHeader);
 
   const body = await request.json().catch(() => ({}));
   
@@ -55,7 +57,7 @@ export async function PUT(
   }
 
 
-  const { data: order, error } = await supabase
+  const { data: order, error } = await serverSupabase
     .from('orders')
     .update(updateData)
     .eq('id', id)
@@ -63,6 +65,7 @@ export async function PUT(
     .single();
 
   if (error) {
+    console.error('Order Update Error:', error);
     return NextResponse.json({ message: error.message }, { status: 400 });
   }
 
@@ -76,11 +79,11 @@ export async function PUT(
       let targetName = 'Valued Client';
 
       if (order.user_id) {
-        const { data: profile } = await supabase
+        const { data: profile } = await supabase // Use public profile fetch (usually readable)
           .from('profiles')
           .select('email, name')
           .eq('id', order.user_id)
-          .single();
+          .maybeSingle(); 
         if (profile) {
           targetEmail = profile.email;
           targetName = profile.name || targetName;
@@ -161,14 +164,17 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const authHeader = request.headers.get('Authorization') || '';
+  const serverSupabase = createServerSupabase(authHeader);
 
 
-  const { error } = await supabase
+  const { error } = await serverSupabase
     .from('orders')
     .delete()
     .eq('id', id);
 
   if (error) {
+    console.error('Order Delete Error:', error);
     return NextResponse.json({ message: error.message }, { status: 400 });
   }
 

@@ -26,12 +26,13 @@ export function CartDrawer() {
 
   // Routes to secure checkout (shipping + payment)
   const handleCheckout = async () => {
-    if (!isAuthenticated || !user) {
-      alert("You must be logged in to access the secure vault.");
-      setIsOpen(false);
-      router.push('/login');
-      return;
-    }
+    // No longer enforcing login to allow guest checkout
+    // if (!isAuthenticated || !user) {
+    //   alert("You must be logged in to access the secure vault.");
+    //   setIsOpen(false);
+    //   router.push('/login');
+    //   return;
+    // }
 
     setCheckoutLoading(true);
     try {

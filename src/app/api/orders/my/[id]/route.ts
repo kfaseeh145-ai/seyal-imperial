@@ -8,16 +8,39 @@ export async function GET(
   const { id } = await params;
 
   try {
-    const { data: orders, error } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('user_id', id)
-      .order('created_at', { ascending: false });
+    // 1. Get the user's email from profiles (using maybeSingle to avoid errors if not found)
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('email')
+      .eq('id', id)
+      .maybeSingle();
 
-    if (error) throw new Error(error.message);
+    // 2. Fetch orders matching user_id OR matching email in shipping_address
+    let orders: any[] = [];
+    
+    if (profile?.email) {
+      const { data, error: fetchError } = await supabase
+        .from('orders')
+        .select('*')
+        .or(`user_id.eq.${id},shipping_address->>email.ilike.${profile.email}`)
+        .order('created_at', { ascending: false });
+      
+      if (fetchError) throw new Error(fetchError.message);
+      orders = data || [];
+    } else {
+      const { data, error: fetchError } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('user_id', id)
+        .order('created_at', { ascending: false });
+        
+      if (fetchError) throw new Error(fetchError.message);
+      orders = data || [];
+    }
 
     return NextResponse.json(orders);
   } catch (error: any) {
+    console.error('My Orders Fetch Error:', error);
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }

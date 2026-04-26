@@ -45,11 +45,15 @@ export async function POST(request: Request) {
       const resend = new Resend(process.env.RESEND_API_KEY);
 
       // Attempt to get user email from profiles if available
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('email, name')
-        .eq('id', user_id)
-        .single();
+      let profile = null;
+      if (user_id) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('email, name')
+          .eq('id', user_id)
+          .single();
+        profile = data;
+      }
 
       const customerEmail = profile?.email || shippingAddress.email;
       const customerName = profile?.name || shippingAddress.name || 'Valued Client';

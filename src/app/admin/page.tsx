@@ -18,7 +18,8 @@ export default function AdminDashboard() {
             const res = await fetch(`/api/orders/${id}`, {
                 method: 'PUT',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${user?.token}`
                 },
                 body: JSON.stringify({ isDelivered: true })
             });
@@ -39,7 +40,10 @@ export default function AdminDashboard() {
         if (!window.confirm('Are you sure you want to delete this order? This cannot be undone.')) return;
         try {
             const res = await fetch(`/api/orders/${id}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${user?.token}`
+                }
             });
             const data = await res.json();
             if (res.ok) {
