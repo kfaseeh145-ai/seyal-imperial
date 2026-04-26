@@ -19,6 +19,10 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   title: "Seyal Imperial | Premium Fragrances",
   description: "Crafted for Presence. Designed for Memory.",
+  icons: {
+    icon: "/images/logo.png",
+    apple: "/images/logo.png",
+  },
 };
 
 export default function RootLayout({
