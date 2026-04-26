@@ -23,21 +23,25 @@ export function BrandStory() {
                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(201,169,110,0.08)_0%,transparent_60%)] z-10" />
 
                         {/* Image Placeholder representing heritage */}
-                        <div className="w-full h-full bg-[#111] overflow-hidden relative">
+                        <div className="w-full h-full bg-[#0a0a0a] overflow-hidden relative flex items-center justify-center">
                             <motion.div
                                 animate={{ scale: [1, 1.05, 1] }}
                                 transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                                className="absolute inset-0 opacity-40 mix-blend-overlay"
+                                className="absolute inset-0 opacity-20"
                                 style={{
                                     backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.85\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E")'
                                 }}
                             />
-                            <div className="absolute inset-0 flex items-center justify-center p-12">
-                                <div className="w-32 h-32 border border-[var(--color-gold)]/30 rounded-full flex items-center justify-center relative">
-                                    <div className="absolute w-full h-full border border-[var(--color-gold)]/10 rounded-full animate-ping" style={{ animationDuration: '4s' }} />
-                                    <span className="font-serif text-[var(--color-gold)] text-4xl">S</span>
-                                </div>
+                            {/* Pulsing glow behind logo */}
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="w-64 h-64 rounded-full bg-[var(--color-gold)]/5 animate-pulse" style={{ animationDuration: '4s' }} />
                             </div>
+                            {/* Actual Logo */}
+                            <img
+                                src="/images/logo.png"
+                                alt="Seyal Impérial Crest"
+                                className="relative z-10 w-80 h-auto object-contain drop-shadow-[0_0_40px_rgba(201,169,110,0.3)]"
+                            />
                         </div>
                     </div>
                 </motion.div>
@@ -57,19 +61,27 @@ export function BrandStory() {
 
                     <div className="space-y-6 text-gray-400 font-light text-lg leading-relaxed">
                         <p>
-                            Seyal Imperial was born from a singular vision: to create fragrances that don't just smell extraordinary, but actively sculpt your presence in the room.
+                            Seyal Impérial was created to turn fragrance into identity. Inspired by Arab luxury and modern elegance, each scent is crafted to leave a lasting impression—bold, refined, and unforgettable.
                         </p>
                         <p>
-                            We source the rarest ingredients from the hidden corners of the globe. From the deep, resinous oud of Southeast Asia to the delicate, hand-picked roses of Grasse, every note is a testament to uncompromising luxury.
+                            From Imperial Oud to Signature Sheikh and Femme Royale, every fragrance tells a story of confidence, power, and elegance.
+                        </p>
+                        <p>
+                            Not just a perfume house—this is presence in a bottle.
+                        </p>
+                        <p className="text-white font-light mt-10">
+                            Seyal Impérial — <span className="text-[var(--color-gold)] italic">Wear Your Legacy.</span>
                         </p>
                     </div>
+
 
                     <div className="pt-8 pt-border-t border-white/10">
                         <div className="grid grid-cols-2 gap-8">
                             <div>
-                                <p className="text-3xl font-serif text-white mb-2">24<span className="text-[var(--color-gold)]">%</span></p>
+                                <p className="text-3xl font-serif text-white mb-2">48<span className="text-[var(--color-gold)]">%</span></p>
                                 <p className="text-xs tracking-[0.2em] text-gray-500 uppercase">Oil Concentration</p>
                             </div>
+
                             <div>
                                 <p className="text-3xl font-serif text-white mb-2">12<span className="text-[var(--color-gold)]">+</span></p>
                                 <p className="text-xs tracking-[0.2em] text-gray-500 uppercase">Hours of Longevity</p>

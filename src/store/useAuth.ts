@@ -1,12 +1,14 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useCart } from './useCart';
+import { supabase } from '@/lib/supabase';
 
 export interface User {
-  _id: string;
+  id: string;
   name: string;
   email: string;
   role: 'admin' | 'user';
-  token: string;
+  token?: string;
 }
 
 interface AuthStore {
@@ -14,6 +16,7 @@ interface AuthStore {
   login: (userData: User) => void;
   logout: () => void;
   isAuthenticated: boolean;
+  isInitialized: boolean;
 }
 
 export const useAuth = create<AuthStore>()(
@@ -21,11 +24,23 @@ export const useAuth = create<AuthStore>()(
     (set) => ({
       user: null,
       isAuthenticated: false,
-      login: (userData) => set({ user: userData, isAuthenticated: true }),
-      logout: () => set({ user: null, isAuthenticated: false }),
+      isInitialized: false,
+      login: (userData) => {
+        useCart.getState().clearCart();
+        set({ user: userData, isAuthenticated: true });
+      },
+      logout: async () => {
+        await supabase.auth.signOut();
+        set({ user: null, isAuthenticated: false });
+        useCart.getState().clearCart();
+      },
     }),
     {
       name: 'seyal-imperial-auth',
+      onRehydrateStorage: () => (state) => {
+        if (state) state.isInitialized = true;
+      },
     }
   )
 );
+

@@ -9,7 +9,17 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 
 export function CartDrawer() {
-  const { items, isOpen, setIsOpen, removeItem, updateQuantity, getCartTotal } = useCart();
+  const { 
+    items, 
+    isOpen, 
+    setIsOpen, 
+    removeItem, 
+    updateQuantity, 
+    getCartTotal, 
+    getCartSubtotal, 
+    getDeliveryCharges, 
+    getDiscount 
+  } = useCart();
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const [checkoutLoading, setCheckoutLoading] = useState(false);
@@ -112,18 +122,30 @@ export function CartDrawer() {
             {items.length > 0 && (
               <div className="p-6 border-t border-white/5 bg-[#0a0a0a]">
                 
-                {/* VIP Perks Note */}
-                <div className="mb-6 p-4 border border-[var(--color-gold)]/20 rounded-sm bg-[var(--color-gold)]/5 flex items-start gap-3">
-                  <span className="text-[var(--color-gold)] text-xs font-serif mt-0.5">✦</span>
-                  <div>
-                    <p className="text-xs text-[var(--color-gold)] uppercase tracking-wider mb-1">Complimentary Addition</p>
-                    <p className="text-xs text-gray-400 font-light tracking-wide">A signature 2ml discovery vial will be included with your order.</p>
+
+
+                <div className="space-y-2 mb-6 border-b border-white/5 pb-4">
+                  <div className="flex justify-between text-[10px] uppercase tracking-widest text-gray-500">
+                    <span>Subtotal</span>
+                    <span>PKR {getCartSubtotal().toFixed(2)}</span>
                   </div>
+                  <div className="flex justify-between text-[10px] uppercase tracking-widest text-gray-500">
+                    <span>Delivery</span>
+                    <span className={getDeliveryCharges() === 0 ? "text-green-500" : ""}>
+                      {getDeliveryCharges() === 0 ? 'FREE' : `PKR ${getDeliveryCharges().toFixed(2)}`}
+                    </span>
+                  </div>
+                  {getDiscount() > 0 && (
+                    <div className="flex justify-between text-[10px] uppercase tracking-widest text-green-500">
+                      <span>Discount (10% OFF)</span>
+                      <span>-PKR {getDiscount().toFixed(2)}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between mb-6">
                   <span className="text-sm uppercase tracking-[0.2em] text-gray-400">Total</span>
-                  <span className="text-2xl font-serif text-white tracking-widest">${getCartTotal().toFixed(2)}</span>
+                  <span className="text-2xl font-serif text-white tracking-widest">PKR {getCartTotal().toFixed(2)}</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Button size="lg" className="w-full" onClick={handleCheckout} disabled={checkoutLoading}>

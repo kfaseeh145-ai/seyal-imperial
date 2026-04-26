@@ -5,20 +5,20 @@ import { motion } from 'framer-motion';
 const notes = [
     {
         title: "Top Notes",
-        description: "The alluring first impression. Vibrant, ephemeral, and captivating.",
-        ingredients: "Bergamot · Saffron · Pink Pepper",
+        description: "The opening is fresh and captivating, a first impression that draws you in with brightness and elegance.",
+        ingredients: "Bergamot · Cardamom · Saffron",
         delay: 0.1,
     },
     {
         title: "Heart Notes",
-        description: "The true character of the fragrance. Deep, emotional, and blooming.",
-        ingredients: "Damask Rose · Jasmine · Nutmeg",
+        description: "At the core, the fragrance reveals its true character—rich, expressive, and refined, leaving a lasting emotional signature.",
+        ingredients: "Damask Rose · Jasmine · Leather",
         delay: 0.3,
     },
     {
         title: "Base Notes",
-        description: "The lingering memory. Rich, resonant, and enduring on the skin.",
-        ingredients: "Oud · Ambergris · Madagascan Vanilla",
+        description: "Deep and powerful, the foundation lingers on the skin—warm, sensual, and undeniably luxurious.",
+        ingredients: "Oud · Amber · Dark Woods",
         delay: 0.5,
     }
 ];

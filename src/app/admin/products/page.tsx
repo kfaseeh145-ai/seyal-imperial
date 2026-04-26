@@ -8,20 +8,22 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 
 export default function AdminProducts() {
-    const { user, isAuthenticated } = useAuth();
+    const { user, isAuthenticated, isInitialized } = useAuth();
+
     const router = useRouter();
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (!isAuthenticated || user?.role !== 'admin') {
+        if (isInitialized && (!isAuthenticated || user?.role !== 'admin')) {
             router.push('/login');
             return;
         }
 
+
         const fetchProducts = async () => {
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/products`);
+                const res = await fetch('/api/products');
                 const data = await res.json();
                 setProducts(data.products || []);
             } catch (err) {
@@ -37,15 +39,12 @@ export default function AdminProducts() {
     const deleteHandler = async (id: string) => {
         if (window.confirm('Are you sure you want to delete this masterpiece?')) {
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/products/${id}`, {
-                    method: 'DELETE',
-                    headers: {
-                        Authorization: `Bearer ${user?.token}`
-                    }
+                const res = await fetch(`/api/products/${id}`, {
+                    method: 'DELETE'
                 });
 
                 if (res.ok) {
-                    setProducts(products.filter((p: any) => p._id !== id));
+                    setProducts(products.filter((p: any) => (p._id !== id && p.id !== id)));
                 } else {
                     alert('Failed to delete product.');
                 }
@@ -102,17 +101,22 @@ export default function AdminProducts() {
                         </thead>
                         <tbody>
                             {products.map((p: any) => (
-                                <tr key={p._id} className="border-b border-white/5 hover:bg-white/5 transition-colors text-sm group">
-                                    <td className="p-4 text-gray-400 font-mono text-xs">{p._id || p.id}</td>
+                                <tr key={p.id} className="border-b border-white/5 hover:bg-white/5 transition-colors text-sm group">
+                                    <td className="p-4 text-gray-400 font-mono text-xs">{p.id}</td>
                                     <td className="p-4 tracking-wide font-serif text-[var(--color-gold-light)]">{p.name}</td>
-                                    <td className="p-4 text-white tracking-widest text-xs font-bold">${p.price}</td>
+                                    <td className="p-4 text-white tracking-widest text-xs font-bold">PKR {p.price}</td>
                                     <td className="p-4">
                                         <span className="px-3 py-1 rounded-full text-[10px] uppercase tracking-widest shadow-sm bg-white/5 border border-white/10 text-gray-300">
                                             {p.category}
                                         </span>
                                     </td>
                                     <td className="p-4 flex gap-3">
-                                        <button onClick={() => deleteHandler(p._id || p.id)} className="text-red-500/80 hover:text-red-400 transition-colors p-2 rounded-md hover:bg-red-500/10">
+                                        <Link href={`/admin/products/${p.id}/edit`}>
+                                            <button className="text-[var(--color-gold)]/70 hover:text-[var(--color-gold)] transition-colors p-2 rounded-md hover:bg-[var(--color-gold)]/10">
+                                                <Edit2 size={16} />
+                                            </button>
+                                        </Link>
+                                        <button onClick={() => deleteHandler(p.id)} className="text-red-500/80 hover:text-red-400 transition-colors p-2 rounded-md hover:bg-red-500/10">
                                             <Trash2 size={16} />
                                         </button>
                                     </td>

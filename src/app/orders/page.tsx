@@ -9,7 +9,8 @@ import { useAuth } from '@/store/useAuth';
 
 export default function MyOrdersPage() {
   const router = useRouter();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isInitialized } = useAuth();
+
 
   const apiBase = useMemo(
     () => process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
@@ -21,21 +22,20 @@ export default function MyOrdersPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!isAuthenticated || !user?.token) {
+    if (isInitialized && (!isAuthenticated || !user?.id)) {
       router.push('/login');
       return;
     }
+
+    if (!isInitialized) return;
+
 
     const run = async () => {
       setLoading(true);
       setError('');
       try {
-        const res = await fetch(`${apiBase}/orders/my`, {
-          headers: {
-            Authorization: `Bearer ${user.token}`,
-          },
-        });
-        const data: unknown = await res.json();
+        const res = await fetch(`/api/orders/my/${user.id}`);
+        const data: any = await res.json();
         if (!res.ok) {
           const message =
             typeof data === 'object' && data !== null && 'message' in data
@@ -96,25 +96,26 @@ export default function MyOrdersPage() {
                 </thead>
                 <tbody>
                   {orders.map((o) => (
-                    <tr key={o._id} className="border-b border-white/5 hover:bg-white/5 transition-colors text-sm">
-                      <td className="p-4 text-gray-300 font-mono text-xs">{String(o._id).slice(-8)}</td>
-                      <td className="p-4 text-gray-500 tracking-widest text-xs">{new Date(o.createdAt).toLocaleDateString()}</td>
-                      <td className="p-4 font-bold text-[var(--color-gold-light)]">${Number(o.totalPrice || 0).toFixed(2)}</td>
+                    <tr key={o.id} className="border-b border-white/5 hover:bg-white/5 transition-colors text-sm">
+                      <td className="p-4 text-gray-300 font-mono text-xs">{String(o.id).substring(0, 8).toUpperCase()}</td>
+                      <td className="p-4 text-gray-500 tracking-widest text-xs">{new Date(o.created_at).toLocaleDateString()}</td>
+                      <td className="p-4 font-bold text-[var(--color-gold-light)]">PKR {Number(o.total_price || 0).toFixed(2)}</td>
                       <td className="p-4">
-                        <span className={`px-3 py-1 rounded-full text-[10px] uppercase tracking-widest shadow-sm ${o.isPaid ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
-                          {o.isPaid ? 'Secure' : 'Pending'}
+                        <span className={`px-3 py-1 rounded-full text-[10px] uppercase tracking-widest shadow-sm ${o.is_paid ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
+                          {o.is_paid ? 'Secure' : 'Pending'}
                         </span>
                       </td>
                       <td className="p-4 tracking-[0.2em] uppercase text-[10px] text-gray-400">
-                        <span className="py-1 px-3 border border-white/10 rounded-full">{o.orderStatus || 'Pending'}</span>
+                        <span className="py-1 px-3 border border-white/10 rounded-full">{o.order_status || 'Pending'}</span>
                       </td>
                       <td className="p-4">
-                        <Link href={`/order/${o._id}`} className="inline-block">
+                        <Link href={`/order/${o.id}`} className="inline-block">
                           <Button size="sm" variant="outline">View</Button>
                         </Link>
                       </td>
                     </tr>
                   ))}
+
                 </tbody>
               </table>
             </div>

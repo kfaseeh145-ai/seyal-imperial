@@ -19,6 +19,9 @@ interface CartStore {
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
+  getCartSubtotal: () => number;
+  getDeliveryCharges: () => number;
+  getDiscount: () => number;
   getCartTotal: () => number;
 }
 
@@ -53,12 +56,37 @@ export const useCart = create<CartStore>()(
         });
       },
       clearCart: () => set({ items: [] }),
-      getCartTotal: () => {
+      getCartSubtotal: () => {
         return get().items.reduce((total, item) => total + item.price * item.quantity, 0);
+      },
+      getDeliveryCharges: () => {
+        const totalQuantity = get().items.reduce((total, item) => total + item.quantity, 0);
+        if (totalQuantity === 0) return 0;
+        return totalQuantity === 1 ? 250 : 0;
+      },
+      getDiscount: () => {
+        const totalQuantity = get().items.reduce((total, item) => total + item.quantity, 0);
+        if (totalQuantity >= 3) {
+          return get().getCartSubtotal() * 0.10;
+        }
+        return 0;
+      },
+      getCartTotal: () => {
+        return get().getCartSubtotal() + get().getDeliveryCharges() - get().getDiscount();
       },
     }),
     {
       name: 'seyal-imperial-cart',
+      onRehydrateStorage: () => (state) => {
+        // Clear out old testing data with invalid Mongo ObjectIds
+        if (state && state.items) {
+          const isValidObjectId = (id: string) => /^[0-9a-fA-F]{24}$/.test(id);
+          const validItems = state.items.filter((item) => isValidObjectId(item.id));
+          if (validItems.length !== state.items.length) {
+            state.items = validItems;
+          }
+        }
+      },
     }
   )
 );

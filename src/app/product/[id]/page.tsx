@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 import ProductDetails from './ProductDetails';
 
 // Force dynamic fetching so it doesn't pre-render at build time
@@ -8,27 +8,28 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
     try {
         const resolvedParams = await params;
         const id = resolvedParams.id; 
-        const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/products/${id}`;
+
+        const { data: dbProduct, error } = await supabase
+            .from('products')
+            .select('*')
+            .eq('id', id)
+            .single();
         
-        const res = await fetch(url, { cache: 'no-store' });
-        
-        if (!res.ok) {
+        if (error || !dbProduct) {
             return (
                 <div className="pt-40 flex items-center justify-center text-white flex-col">
-                    <h1 className="text-3xl text-red-500">Failed to fetch API</h1>
-                    <p>Status: {res.status}</p>
-                    <p>URL: {url}</p>
+                    <h1 className="text-3xl text-red-500">Product not found</h1>
+                    <p>The fragrance empire could not find this scent.</p>
                 </div>
             );
         }
-        
-        const dbProduct = await res.json();
+
         
         // ... mapping
         const product = {
             ...dbProduct,
             imageUrl: dbProduct.images?.[0] || '/images/hero.png',
-            price: `$${dbProduct.price}`,
+            price: `PKR ${dbProduct.price}`,
             notes: dbProduct.notes ? `${dbProduct.notes.top}, ${dbProduct.notes.heart}, ${dbProduct.notes.base}` : 'No notes available',
             occasions: ['Signature', dbProduct.category || 'Luxury'],
             mistColor: 'rgba(201,169,110,0.3)',

@@ -41,7 +41,7 @@ export function Hero() {
                     </h1>
 
                     <p className="text-gray-300 text-base md:text-lg font-light max-w-lg mx-auto md:mx-0 pt-4 pb-6 drop-shadow-md">
-                        Experience the epitome of luxury fragrance. An exclusive selection of majestic scents that define your legacy.
+                        Seyal Impérial is a luxury fragrance house inspired by Arabian heritage and modern elegance. We create bold and refined scents designed to express identity, confidence, and timeless style. Each fragrance is crafted to leave a lasting impression. <span className="text-[var(--color-gold)] italic">More than a scent… a statement.</span>
                     </p>
 
                     <motion.div
@@ -72,9 +72,10 @@ export function Hero() {
 
                     {/* The Image with CSS Mask to remove black box bounds */}
                     <img
-                        src="/images/hero.png"
+                        src="/images/hero_imperial.PNG"
                         alt="Seyal Imperial Signature"
                         className="w-full h-full object-contain mix-blend-screen drop-shadow-[0_0_30px_rgba(201,169,110,0.3)] opacity-90"
+
                         style={{
                             WebkitMaskImage: 'radial-gradient(circle at 50% 50%, black 30%, transparent 65%)',
                             maskImage: 'radial-gradient(circle at 50% 50%, black 30%, transparent 65%)'

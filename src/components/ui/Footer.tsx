@@ -9,16 +9,49 @@ export function Footer() {
                     <p className="text-gray-500 text-sm tracking-widest uppercase">The Essence of Luxury</p>
                 </div>
 
-                <div className="flex gap-8">
-                    {['Instagram', 'Facebook', 'Twitter', 'TikTok'].map((social) => (
-                        <Link
-                            key={social}
-                            href="#"
-                            className="text-xs text-gray-400 hover:text-[var(--color-gold)] uppercase tracking-widest transition-colors"
-                        >
-                            {social}
-                        </Link>
-                    ))}
+                <div className="flex flex-wrap justify-center gap-8">
+                    <Link
+                        href="https://www.tiktok.com/@seyal.imperial?_r=1&_t=ZS-95kQ8QU87lo"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-gray-400 hover:text-[var(--color-gold)] uppercase tracking-widest transition-colors"
+                    >
+                        TikTok
+                    </Link>
+                    <Link
+                        href="https://x.com/seyalimperial?s=21"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-gray-400 hover:text-[var(--color-gold)] uppercase tracking-widest transition-colors"
+                    >
+                        X
+                    </Link>
+                    <Link
+                        href="https://www.instagram.com/seyal.imperial?igsh=ZmdteTc1bTI0bXZi&utm_source=qr"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-gray-400 hover:text-[var(--color-gold)] uppercase tracking-widest transition-colors"
+                    >
+                        Instagram
+                    </Link>
+                    <Link
+                        href="https://www.facebook.com/share/1FCGpiYYKR/?mibextid=wwXIfr"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-gray-400 hover:text-[var(--color-gold)] uppercase tracking-widest transition-colors"
+                    >
+                        Facebook
+                    </Link>
+                </div>
+
+                <div className="flex flex-col items-center gap-2">
+                    <p className="text-[10px] uppercase tracking-[0.3em] text-[var(--color-gold)]">Contact Us</p>
+                    <a 
+                        href="mailto:seyalimperial@gmail.com" 
+                        className="text-white hover:text-[var(--color-gold)] transition-colors tracking-widest text-sm"
+                    >
+                        seyalimperial@gmail.com
+                    </a>
                 </div>
 
                 <div className="pt-8 border-t border-white/10 w-full max-w-md flex flex-col items-center gap-4">

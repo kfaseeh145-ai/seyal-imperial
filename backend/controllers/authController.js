@@ -9,15 +9,7 @@ const sendEmail = require('../utils/sendEmail');
 const registerUser = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
 
-  const mongoose = require('mongoose');
-  if (mongoose.connection.readyState !== 1) {
-    console.log("Database offline. Returning simulated verification payload.");
-    return res.status(200).json({
-      message: 'Simulated verification mode',
-      isVerified: false,
-      email: email || 'admin@test.com'
-    });
-  }
+
 
   const userExists = await User.findOne({ email });
 
@@ -82,17 +74,7 @@ const registerUser = asyncHandler(async (req, res) => {
 const verifyUser = asyncHandler(async (req, res) => {
   const { email, code } = req.body;
 
-  const mongoose = require('mongoose');
-  if (mongoose.connection.readyState !== 1) {
-    console.log("Database offline. Completing simulated verification.");
-    return res.status(201).json({
-      _id: 'dummy-admin-id',
-      name: 'Admin Tester',
-      email: email || 'admin@test.com',
-      role: 'admin',
-      token: generateToken('dummy-admin-id'),
-    });
-  }
+
 
   const user = await User.findOne({ email });
 
@@ -120,17 +102,7 @@ const verifyUser = asyncHandler(async (req, res) => {
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
-  const mongoose = require('mongoose');
-  if (mongoose.connection.readyState !== 1) {
-    console.log("Database offline. Returning simulated Admin login credentials.");
-    return res.json({
-      _id: 'dummy-admin-id',
-      name: 'Admin Tester',
-      email: email || 'admin@test.com',
-      role: 'admin',
-      token: generateToken('dummy-admin-id'),
-    });
-  }
+
 
   const user = await User.findOne({ email });
 

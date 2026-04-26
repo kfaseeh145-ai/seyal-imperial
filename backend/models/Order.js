@@ -23,8 +23,13 @@ const orderSchema = mongoose.Schema(
     shippingAddress: {
       address: { type: String, required: true },
       city: { type: String, required: true },
-      postalCode: { type: String, required: true },
+      postalCode: { type: String, required: false },
       country: { type: String, required: true },
+    },
+    isGiftPack: {
+      type: Boolean,
+      required: true,
+      default: false,
     },
     paymentMethod: {
       type: String,
@@ -59,7 +64,7 @@ const orderSchema = mongoose.Schema(
     },
     orderStatus: {
       type: String,
-      enum: ['Pending', 'Processing', 'Shipped', 'Delivered'],
+      enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Completed'],
       default: 'Pending',
     }
   },

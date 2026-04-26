@@ -3,27 +3,66 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/store/useAuth';
 import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { Loader2, Trash2, CheckCircle } from 'lucide-react';
 
 export default function AdminDashboard() {
-    const { user, isAuthenticated } = useAuth();
+    const { user, isAuthenticated, isInitialized } = useAuth();
+
     const router = useRouter();
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const markAsCompleted = async (id: string) => {
+        if (!window.confirm('Mark this order as completed and paid?')) return;
+        try {
+            const res = await fetch(`/api/orders/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ isDelivered: true })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                setOrders(orders.map(o => (o.id === id) ? { ...o, order_status: 'Completed', is_delivered: true, is_paid: true } : o));
+            } else {
+                alert(`Error: ${data.message || 'Failed to update order'}`);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Failed to connect to server');
+        }
+    };
+
+    const deleteOrder = async (id: string) => {
+        if (!window.confirm('Are you sure you want to delete this order? This cannot be undone.')) return;
+        try {
+            const res = await fetch(`/api/orders/${id}`, {
+                method: 'DELETE'
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setOrders(orders.filter(o => o.id !== id));
+            } else {
+                alert(`Error: ${data.message || 'Failed to delete order'}`);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Failed to connect to server');
+        }
+    };
 
     useEffect(() => {
-        if (!isAuthenticated || user?.role !== 'admin') {
+        if (isInitialized && (!isAuthenticated || user?.role !== 'admin')) {
             router.push('/login');
             return;
         }
 
+
         const fetchOrders = async () => {
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/orders`, {
-                    headers: {
-                        Authorization: `Bearer ${user.token}`
-                    }
-                });
+                const res = await fetch('/api/orders');
                 const data = await res.json();
                 setOrders(Array.isArray(data) ? data : []);
             } catch (err) {
@@ -34,7 +73,7 @@ export default function AdminDashboard() {
         };
 
         fetchOrders();
-    }, [isAuthenticated, user, router]);
+    }, [isInitialized, isAuthenticated, user, router]);
 
     if (!user || user.role !== 'admin') {
         return (
@@ -61,7 +100,7 @@ export default function AdminDashboard() {
                 ) : orders.length === 0 ? (
                     <div className="py-20 text-center">
                         <p className="text-gray-500 tracking-widest uppercase mb-2">No orders have been placed yet.</p>
-                        <p className="text-gray-700 text-xs">When customers check out securely via Stripe, receipts will populate here.</p>
+                        <p className="text-gray-700 text-xs">When customers place orders, they will appear here.</p>
                     </div>
                 ) : (
                     <table className="w-full text-left border-collapse min-w-[800px]">
@@ -73,28 +112,61 @@ export default function AdminDashboard() {
                                 <th className="p-4 font-normal">Net Revenue</th>
                                 <th className="p-4 font-normal">Cleared</th>
                                 <th className="p-4 font-normal">Logistics</th>
+                                <th className="p-4 font-normal">Details</th>
+                                <th className="p-4 font-normal text-center">Completed</th>
+                                <th className="p-4 font-normal text-center">Delete</th>
                             </tr>
                         </thead>
                         <tbody>
                             {orders.map((o: any) => (
-                                <tr key={o._id} className="border-b border-white/5 hover:bg-white/5 transition-colors text-sm group">
-                                    <td className="p-4 text-gray-400 font-mono text-xs">{o._id.substring(o._id.length - 8)}</td>
-                                    <td className="p-4 tracking-wide">{o.user?.name || 'Guest'}</td>
-                                    <td className="p-4 text-gray-500 tracking-widest text-xs">{new Date(o.createdAt).toLocaleDateString()}</td>
-                                    <td className="p-4 font-bold text-[var(--color-gold-light)] drop-shadow-md pb-0">${o.totalPrice}</td>
+                                <tr key={o.id} className="border-b border-white/5 hover:bg-white/5 transition-colors text-sm group">
+                                    <td className="p-4 text-gray-400 font-mono text-xs">{o.id.substring(0, 8).toUpperCase()}</td>
+                                    <td className="p-4 tracking-wide">
+                                        <div className="text-white">{o.user?.name && o.user.name !== 'Guest' ? o.user.name : (o.shipping_address?.name || 'Guest')}</div>
+                                        <div className="text-[10px] text-gray-500 mt-1">{o.shipping_address?.phone || o.user?.email}</div>
+                                    </td>
+                                    <td className="p-4 text-gray-500 tracking-widest text-xs">{new Date(o.created_at).toLocaleDateString()}</td>
+                                    <td className="p-4 font-bold text-[var(--color-gold-light)] drop-shadow-md pb-0">PKR {Number(o.total_price || 0).toFixed(2)}</td>
                                     <td className="p-4">
-                                        <span className={`px-3 py-1 rounded-full text-[10px] uppercase tracking-widest shadow-sm ${o.isPaid ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
-                                            {o.isPaid ? 'Secure' : 'Pending'}
+                                        <span className={`px-3 py-1 rounded-full text-[10px] uppercase tracking-widest shadow-sm ${o.is_paid ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
+                                            {o.is_paid ? 'Secure' : 'Pending'}
                                         </span>
                                     </td>
                                     <td className="p-4 tracking-[0.2em] uppercase text-[10px] text-gray-400">
-                                        <span className="py-1 px-3 border border-white/10 rounded-full">{o.orderStatus || 'Processing'}</span>
+                                        <span className="py-1 px-3 border border-white/10 rounded-full">{o.order_status || 'Processing'}</span>
+                                    </td>
+
+                                    <td className="p-4">
+                                        <Link
+                                            href={`/order/${o.id}`}
+                                            className="text-[10px] uppercase tracking-widest text-[var(--color-gold)] hover:text-white border border-[var(--color-gold)]/30 hover:border-white/30 px-3 py-1 rounded-sm transition-colors"
+                                        >
+                                            View
+                                        </Link>
+                                    </td>
+                                    <td className="p-4 text-center">
+                                        <button
+                                            onClick={() => markAsCompleted(o.id)}
+                                            disabled={o.order_status === 'Completed'}
+                                            className={`text-[10px] uppercase tracking-widest px-3 py-1 rounded-sm transition-colors border ${o.order_status === 'Completed' ? 'border-green-500/20 text-green-500/40 cursor-not-allowed' : 'border-green-500/30 text-green-400 hover:bg-green-500/10'}`}
+                                        >
+                                            {o.order_status === 'Completed' ? 'Done' : 'Complete'}
+                                        </button>
+                                    </td>
+                                    <td className="p-4 text-center">
+                                        <button
+                                            onClick={() => deleteOrder(o.id)}
+                                            className="text-[10px] uppercase tracking-widest px-3 py-1 rounded-sm border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
+                                        >
+                                            Delete
+                                        </button>
                                     </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
-                )}
+                )
+            }
             </div>
         </div>
     );

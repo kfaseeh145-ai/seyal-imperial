@@ -26,37 +26,46 @@ const dummyProducts = [
 // @route   GET /api/products
 // @access  Public
 const getProducts = asyncHandler(async (req, res) => {
-  const mongoose = require('mongoose');
-  if (mongoose.connection.readyState !== 1) {
-    return res.json({ products: dummyProducts, page: 1, pages: 1 });
-  }
-
-  const pageSize = 10;
+  const pageSize = 50;
   const page = Number(req.query.pageNumber) || 1;
   const keyword = req.query.keyword
     ? { name: { $regex: req.query.keyword, $options: 'i' } }
     : {};
 
-  const count = await Product.countDocuments({ ...keyword });
-  const products = await Product.find({ ...keyword })
-    .limit(pageSize)
-    .skip(pageSize * (page - 1));
+  let count = 0;
+  let products = [];
 
-  res.json({ products, page, pages: Math.ceil(count / pageSize) });
+  try {
+    count = await Product.countDocuments({ ...keyword });
+    products = await Product.find({ ...keyword })
+      .limit(pageSize)
+      .skip(pageSize * (page - 1));
+  } catch (err) {
+    console.error("❌ Database Fetch Error:", err.message);
+  }
+
+  // Fallback to dummy products if DB is empty or disconnected
+  if (products.length === 0) {
+    console.log("ℹ️ Returning simulated product data.");
+    return res.json({ 
+      products: dummyProducts, 
+      page: 1, 
+      pages: 1,
+      isSimulated: true 
+    });
+  }
+
+  res.json({ 
+    products, 
+    page, 
+    pages: Math.ceil(count / pageSize) || 1 
+  });
 });
 
 // @desc    Fetch single product
 // @route   GET /api/products/:id
 // @access  Public
 const getProductById = asyncHandler(async (req, res) => {
-  const mongoose = require('mongoose');
-  if (mongoose.connection.readyState !== 1) {
-    const product = dummyProducts.find(p => p._id === req.params.id);
-    if (product) return res.json(product);
-    res.status(404);
-    throw new Error('Product not found');
-  }
-
   const product = await Product.findById(req.params.id);
 
   if (product) {

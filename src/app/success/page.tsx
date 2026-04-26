@@ -41,22 +41,17 @@ export default function SuccessPage() {
     setMessage(simulated ? 'Simulating secure confirmation…' : 'Waiting for payment confirmation…');
 
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-
       // Simulator/dev fallback: flip the order immediately if we're in simulated mode
       if (simulated) {
-        const res = await fetch(`${apiBase}/orders/${orderId}/pay`, {
+        const res = await fetch(`/api/orders/${orderId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${user.token}`,
           },
           body: JSON.stringify({
-            session_id: sessionId || undefined,
-            paymentResult: {
-              id: sessionId || undefined,
-              status: 'simulated',
-            },
+            isPaid: true,
+            status: 'paid_simulated'
           }),
         });
         const data = await res.json().catch(() => ({}));
@@ -69,13 +64,13 @@ export default function SuccessPage() {
 
       // Real card flow: webhook marks isPaid. We poll the order until it flips.
       const poll = async () => {
-        const res = await fetch(`${apiBase}/orders/${orderId}`, {
+        const res = await fetch(`/api/orders/${orderId}`, {
           headers: { Authorization: `Bearer ${user.token}` },
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data?.message || 'Unable to fetch order status.');
 
-        if (data?.isPaid) {
+        if (data?.is_paid) {
           clearCart();
           setState('confirmed');
           setMessage('Payment confirmed. Your order is now secured in the vault.');
@@ -112,6 +107,7 @@ export default function SuccessPage() {
       setState('error');
       setMessage(err instanceof Error ? err.message : 'Unable to confirm payment.');
     }
+
   };
 
   useEffect(() => {

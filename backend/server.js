@@ -2,29 +2,42 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const path = require('path');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const mongoSanitize = require('express-mongo-sanitize');
 const connectDB = require('./config/db');
 const { errorHandler, notFound } = require('./middleware/errorMiddleware');
 
 // Load env vars
-// Prefer `backend/.env` when starting from repo root (npm run server).
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
-// Connect to database (Disable locally if you don't have MongoDB set up yet)
 connectDB();
 
 const app = express();
 
-// Stripe webhook needs the raw body. It must be registered BEFORE express.json().
-app.use('/api/orders/stripe/webhook', express.raw({ type: 'application/json' }));
-
-// Body parser (for normal JSON routes)
-app.use(express.json());
-
-// Enable CORS securely for production domains
+// 1. Enable CORS FIRST (Critical for handling OPTIONS/Preflight)
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: true,
   credentials: true,
 }));
+
+// 2. Security Middlewares
+app.use(helmet({
+  crossOriginResourcePolicy: false,
+  contentSecurityPolicy: false,
+}));
+// app.use(mongoSanitize()); // Temporarily disabled to fix the IncomingMessage error
+
+// 3. Rate Limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, 
+  max: 1000,
+  message: 'Too many requests'
+});
+app.use('/api/', limiter);
+
+// 4. Body parser
+app.use(express.json({ limit: '10mb' }));
 
 // Mount routers
 app.use('/api/auth', require('./routes/authRoutes'));

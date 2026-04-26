@@ -4,20 +4,24 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ShoppingCart } from 'lucide-react';
+import { useCart } from '@/store/useCart';
 
 export function FeaturedProducts() {
     const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const { addItem, setIsOpen } = useCart();
 
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                // Fetch from our new Express Backend
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/products`);
-                if (!response.ok) throw new Error('Network response was not ok');
+                const response = await fetch('/api/products');
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error(`Server Error (${response.status}):`, errorData.message || 'Unknown error');
+                    throw new Error(`Network response was not ok: ${response.status}`);
+                }
                 const data = await response.json();
-                
                 setProducts(data.products || []);
             } catch (error) {
                 console.error("Failed to fetch products:", error);
@@ -63,13 +67,11 @@ export function FeaturedProducts() {
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true, margin: "-100px" }}
                                 transition={{ duration: 0.8, delay: index * 0.2 }}
-                                className="group relative cursor-pointer"
+                                className="group relative"
                             >
-                                <Link href={`/product/${product._id || product.id}`}>
+                                <Link href={`/product/${product._id || product.id}`} className="block">
                                     {/* Product Card / Image Container */}
-                                    <div
-                                        className="relative aspect-[4/5] overflow-hidden rounded-sm bg-black border border-white/5 transition-all duration-700 ease-out group-hover:border-[var(--color-gold)]/30 group-hover:shadow-[0_0_40px_rgba(201,169,110,0.1)] flex items-center justify-center p-8"
-                                    >
+                                    <div className="relative aspect-[4/5] overflow-hidden rounded-sm bg-black border border-white/5 transition-all duration-700 ease-out group-hover:border-[var(--color-gold)]/30 group-hover:shadow-[0_0_40px_rgba(201,169,110,0.1)] flex items-center justify-center">
                                         <div
                                             className="absolute inset-0 z-0 transition-transform duration-1000 group-hover:scale-105"
                                             style={{ background: 'radial-gradient(circle at 50% 50%, #1a1a1a 0%, #000000 100%)' }}
@@ -82,11 +84,11 @@ export function FeaturedProducts() {
                                         />
 
                                         {/* Product Image */}
-                                        <div className="relative z-10 w-full h-full flex items-center justify-center group-hover:-translate-y-4 transition-transform duration-700 mix-blend-screen">
+                                        <div className="relative z-10 w-full h-full flex items-center justify-center group-hover:-translate-y-2 transition-transform duration-700">
                                             <img
-                                                src={product.images?.[0] || '/images/hero.png'}
+                                                src={product.images?.[0] || product.imageUrl || '/images/hero.png'}
                                                 alt={product.name}
-                                                className="max-h-full object-contain"
+                                                className="w-full h-full object-contain p-4"
                                             />
                                         </div>
                                     </div>
@@ -96,13 +98,38 @@ export function FeaturedProducts() {
                                         <h3 className="text-2xl font-serif text-white mb-2">{product.name}</h3>
                                         <p className="text-sm tracking-widest text-gray-400 uppercase mb-4">{product.category}</p>
                                         <div className="w-8 h-[1px] bg-[var(--color-gold)]/50 mb-4" />
-                                        <p className="text-white tracking-widest mb-6">${product.price}</p>
-
-                                        <div className="inline-flex items-center justify-center px-8 py-3 text-sm font-medium transition-all duration-500 delay-100 border border-white/20 text-white hover:bg-white hover:text-black opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 rounded-sm">
-                                            Discover
-                                        </div>
+                                        <p className="text-white tracking-widest mb-6">PKR {product.price}</p>
                                     </div>
                                 </Link>
+
+                                {/* Action Buttons */}
+                                <div className="text-center flex flex-col items-center">
+                                    <div className="flex gap-4 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500 delay-100">
+                                        <Link 
+                                            href={`/product/${product._id || product.id}`}
+                                            className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium border border-white/20 text-white hover:bg-white hover:text-black rounded-sm transition-colors"
+                                        >
+                                            Discover
+                                        </Link>
+                                        <button
+                                            onClick={() => {
+                                                addItem({
+                                                    id: product._id || product.id,
+                                                    name: product.name,
+                                                    price: Number(product.price.toString().replace('PKR ', '').replace(',', '')),
+                                                    displayPrice: product.price.toString(),
+                                                    imageUrl: product.images?.[0] || product.imageUrl || '/images/hero.png',
+                                                    quantity: 1,
+                                                });
+                                                setIsOpen(true);
+                                            }}
+                                            className="inline-flex items-center gap-2 justify-center px-6 py-3 text-sm font-medium bg-[var(--color-gold)] text-black hover:bg-[var(--color-gold-light)] rounded-sm transition-colors"
+                                        >
+                                            <ShoppingCart size={16} />
+                                            Add to Cart
+                                        </button>
+                                    </div>
+                                </div>
                             </motion.div>
                         ))}
                     </div>

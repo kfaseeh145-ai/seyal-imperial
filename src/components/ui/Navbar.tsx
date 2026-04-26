@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ShoppingBag, Menu, X } from 'lucide-react';
+import { ShoppingBag, Menu, X, Package } from 'lucide-react';
 import { useCart } from '@/store/useCart';
 import { useAuth } from '@/store/useAuth';
 
@@ -47,9 +47,13 @@ export function Navbar() {
                     {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
                 </button>
 
-                {/* Brand */}
-                <Link href="/" className="text-2xl md:text-3xl font-serif text-white tracking-[0.2em] transform md:translate-x-12">
-                    SEYAL IMPÉRIAL
+                {/* Brand Logo */}
+                <Link href="/" className="transform md:translate-x-12 flex items-center">
+                    <img
+                        src="/images/logo.png"
+                        alt="Seyal Impérial"
+                        className="h-14 md:h-16 w-auto object-contain"
+                    />
                 </Link>
 
                 {/* Desktop Nav */}
@@ -81,19 +85,33 @@ export function Navbar() {
                     )}
                 </nav>
 
-                {/* Cart */}
-                <button 
-                    className="text-white hover:text-[var(--color-gold)] transition-colors relative flex items-center gap-2 group cursor-pointer"
-                    onClick={() => setIsOpen(true)}
-                >
-                    <span className="text-xs tracking-widest hidden md:inline-block uppercase text-gray-400 group-hover:text-[var(--color-gold)] transition-colors">Cart</span>
-                    <ShoppingBag size={20} strokeWidth={1.5} />
-                    {cartItemCount > 0 && (
-                        <span className="absolute -top-1 -right-2 bg-[var(--color-gold)] text-black text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
-                            {cartItemCount}
-                        </span>
+                {/* Icons Group */}
+                <div className="flex items-center gap-6">
+                    {/* Orders (Authenticated only) */}
+                    {isAuthenticated && (
+                        <Link 
+                            href="/orders"
+                            className="text-white hover:text-[var(--color-gold)] transition-colors relative flex items-center gap-2 group cursor-pointer"
+                        >
+                            <span className="text-xs tracking-widest hidden md:inline-block uppercase text-gray-400 group-hover:text-[var(--color-gold)] transition-colors">Orders</span>
+                            <Package size={20} strokeWidth={1.5} />
+                        </Link>
                     )}
-                </button>
+
+                    {/* Cart */}
+                    <button 
+                        className="text-white hover:text-[var(--color-gold)] transition-colors relative flex items-center gap-2 group cursor-pointer"
+                        onClick={() => setIsOpen(true)}
+                    >
+                        <span className="text-xs tracking-widest hidden md:inline-block uppercase text-gray-400 group-hover:text-[var(--color-gold)] transition-colors">Cart</span>
+                        <ShoppingBag size={20} strokeWidth={1.5} />
+                        {cartItemCount > 0 && (
+                            <span className="absolute -top-1 -right-2 bg-[var(--color-gold)] text-black text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
+                                {cartItemCount}
+                            </span>
+                        )}
+                    </button>
+                </div>
             </div>
 
             {/* Mobile Menu */}
@@ -114,6 +132,39 @@ export function Navbar() {
                                 {link.name}
                             </Link>
                         ))}
+                        
+                        <div className="h-px bg-white/5 my-2" />
+
+                        {!isAuthenticated ? (
+                            <Link
+                                href="/login"
+                                className="text-sm tracking-widest text-[var(--color-gold)] hover:text-white transition-colors uppercase py-2"
+                                onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                                Login / Register
+                            </Link>
+                        ) : (
+                            <>
+                                {user?.role === 'admin' && (
+                                    <Link
+                                        href="/admin"
+                                        className="text-sm tracking-widest text-[var(--color-gold)] font-bold transition-colors uppercase py-2"
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                    >
+                                        Admin Dashboard
+                                    </Link>
+                                )}
+                                <button
+                                    onClick={() => {
+                                        logout();
+                                        setIsMobileMenuOpen(false);
+                                    }}
+                                    className="text-sm tracking-widest text-left text-gray-400 hover:text-[var(--color-red)] transition-colors uppercase py-2"
+                                >
+                                    Logout
+                                </button>
+                            </>
+                        )}
                     </div>
                 </motion.div>
             )}

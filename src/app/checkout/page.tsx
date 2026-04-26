@@ -1,67 +1,46 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/store/useAuth';
 import { useCart } from '@/store/useCart';
-import { loadStripe } from '@stripe/stripe-js';
-import { CardElement, Elements, useElements, useStripe } from '@stripe/react-stripe-js';
 
-type PaymentMethod = 'COD' | 'CARD';
-
-const paymentClient = loadStripe(process.env.NEXT_PUBLIC_PAYMENTS_PUBLIC_KEY || '');
-
-function CardCheckoutSection({ disabled }: { disabled: boolean }) {
-  const stripe = useStripe();
-  const elements = useElements();
-
-  return (
-    <div className={`border border-white/10 bg-black/30 rounded-sm p-5 ${disabled ? 'opacity-60' : ''}`}>
-      <div className="text-xs uppercase tracking-[0.25em] text-gray-500 mb-4">Card Details</div>
-      <div className="border border-white/10 bg-black rounded-sm px-4 py-4">
-        <CardElement
-          options={{
-            style: {
-              base: {
-                color: '#ededed',
-                fontFamily: 'Outfit, system-ui, sans-serif',
-                fontSize: '16px',
-                '::placeholder': { color: '#6b7280' },
-              },
-              invalid: { color: '#f87171' },
-            },
-          }}
-        />
-      </div>
-      <div className="mt-3 text-[10px] uppercase tracking-widest text-gray-500">
-        Your card details are entered securely.
-      </div>
-      <div className="sr-only">{String(!!stripe && !!elements)}</div>
-    </div>
-  );
-}
-
-function CheckoutInner() {
+export default function CheckoutPage() {
   const router = useRouter();
-  const { user, isAuthenticated } = useAuth();
-  const { items, getCartTotal, clearCart } = useCart();
+  const { user, isAuthenticated, isInitialized } = useAuth();
+  
+  useEffect(() => {
+    if (isInitialized && !isAuthenticated) {
+      router.push('/login?redirect=checkout');
+    }
+  }, [isInitialized, isAuthenticated, router]);
 
-  const stripe = useStripe();
-  const elements = useElements();
+
+  const { 
+    items, 
+    getCartTotal, 
+    getCartSubtotal, 
+    getDeliveryCharges, 
+    getDiscount, 
+    clearCart 
+  } = useCart();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CARD');
 
   const [address, setAddress] = useState('');
+  const [phone, setPhone] = useState('');
   const [city, setCity] = useState('');
   const [postalCode, setPostalCode] = useState('');
   const [country, setCountry] = useState('');
+  const [isGiftPack, setIsGiftPack] = useState(false);
+
+  const GIFT_PACK_PRICE = 199;
 
   const apiBase = useMemo(
-    () => process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
+    () => process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000/api',
     []
   );
 
@@ -81,10 +60,9 @@ function CheckoutInner() {
     !loading &&
     items.length > 0 &&
     address.trim() &&
+    phone.trim() &&
     city.trim() &&
-    postalCode.trim() &&
-    country.trim() &&
-    (paymentMethod === 'COD' || (!!stripe && !!elements));
+    country.trim();
 
   const submit = async () => {
     if (!isAuthenticated || !user?.token) {
@@ -97,72 +75,40 @@ function CheckoutInner() {
     setError('');
 
     try {
-      // 1) Create the order (payment pending)
-      const createRes = await fetch(`${apiBase}/orders`, {
+      const createRes = await fetch('/api/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`,
         },
         body: JSON.stringify({
           orderItems,
-          shippingAddress: { address, city, postalCode, country },
-          paymentMethod: paymentMethod === 'COD' ? 'CashOnDelivery' : 'Card',
-          totalPrice: Number(getCartTotal().toFixed(2)),
+          shippingAddress: { 
+            name: user.name, // Save the name directly with the order
+            email: user.email, // Save the email directly with the order
+            address, 
+            city, 
+            postalCode, 
+            country, 
+            phone 
+          },
+
+          paymentMethod: 'CashOnDelivery',
+          isGiftPack,
+          totalPrice: Number((getCartTotal() + (isGiftPack ? GIFT_PACK_PRICE : 0)).toFixed(2)),
+          user_id: user.id,
         }),
+
       });
 
+ 
       const created: any = await createRes.json();
       if (!createRes.ok) throw new Error(created?.message || 'Failed to create order');
-
-      const orderId = created?._id;
+ 
+      const orderId = created?.id; // Supabase uses 'id'
       if (!orderId) throw new Error('Order was created without an id');
-
-      // 2) COD: go straight to receipt
-      if (paymentMethod === 'COD') {
-        clearCart();
-        router.push(`/order/${orderId}`);
-        return;
-      }
-
-      if (!stripe || !elements) throw new Error('Payment form is not ready');
-
-      const card = elements.getElement(CardElement);
-      if (!card) throw new Error('Card input is missing');
-
-      // 3) Create payment intent for the order
-      const intentRes = await fetch(`${apiBase}/orders/${orderId}/payment-intent`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`,
-        },
-      });
-      const intent: any = await intentRes.json();
-      if (!intentRes.ok) throw new Error(intent?.message || 'Failed to start payment');
-      if (!intent?.clientSecret) throw new Error('Missing payment client secret');
-
-      // 4) Confirm payment using the embedded card form
-      const result = await stripe.confirmCardPayment(intent.clientSecret, {
-        payment_method: {
-          card,
-          billing_details: {
-            name: user?.name || undefined,
-            email: user?.email || undefined,
-          },
-        },
-      });
-
-      if (result.error) {
-        throw new Error(result.error.message || 'Payment failed');
-      }
-
-      if (result.paymentIntent?.status !== 'succeeded' && result.paymentIntent?.status !== 'processing') {
-        throw new Error('Payment not completed');
-      }
-
+ 
       clearCart();
-      router.push(`/success?orderId=${orderId}`);
+      router.push(`/order/${orderId}`);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Checkout failed';
       setError(message);
@@ -193,7 +139,7 @@ function CheckoutInner() {
             Secure <span className="text-[var(--color-gold)] italic">Checkout</span>
           </h1>
           <p className="text-gray-500 text-xs uppercase tracking-[0.35em] mt-2">
-            Shipping → Payment → Receipt
+            Shipping → Receipt
           </p>
         </header>
 
@@ -218,6 +164,16 @@ function CheckoutInner() {
                   placeholder="Street, building, apartment"
                 />
               </div>
+              <div className="md:col-span-2">
+                <label className="block text-xs uppercase tracking-widest text-gray-500 mb-2">Phone Number</label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full bg-black border border-white/10 text-white px-4 py-3 focus:outline-none focus:border-[var(--color-gold)] transition-colors"
+                  placeholder="+92 300 1234567"
+                />
+              </div>
               <div>
                 <label className="block text-xs uppercase tracking-widest text-gray-500 mb-2">City</label>
                 <input
@@ -228,7 +184,9 @@ function CheckoutInner() {
                 />
               </div>
               <div>
-                <label className="block text-xs uppercase tracking-widest text-gray-500 mb-2">Postal Code</label>
+                <label className="block text-xs uppercase tracking-widest text-gray-500 mb-2">
+                  Postal Code <span className="text-[10px] lowercase text-gray-600 tracking-normal">(Optional)</span>
+                </label>
                 <input
                   value={postalCode}
                   onChange={(e) => setPostalCode(e.target.value)}
@@ -250,74 +208,89 @@ function CheckoutInner() {
 
           <div>
             <h2 className="text-xs uppercase tracking-[0.25em] text-gray-500 mb-4">
-              Payment Method
+              Order Extras
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('CARD')}
-                className={`text-left p-5 border rounded-sm transition-colors ${
-                  paymentMethod === 'CARD'
-                    ? 'border-[var(--color-gold)] bg-[var(--color-gold)]/5'
-                    : 'border-white/10 bg-black hover:border-white/20'
-                }`}
-              >
-                <div className="text-white tracking-wide">Card</div>
-                <div className="text-gray-500 text-xs tracking-widest uppercase mt-1">Secure payment</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('COD')}
-                className={`text-left p-5 border rounded-sm transition-colors ${
-                  paymentMethod === 'COD'
-                    ? 'border-[var(--color-gold)] bg-[var(--color-gold)]/5'
-                    : 'border-white/10 bg-black hover:border-white/20'
-                }`}
-              >
-                <div className="text-white tracking-wide">Cash on Delivery</div>
-                <div className="text-gray-500 text-xs tracking-widest uppercase mt-1">Pay at arrival</div>
-              </button>
-            </div>
-
-            {paymentMethod === 'CARD' && (
-              <div className="mt-6">
-                <CardCheckoutSection disabled={loading} />
+            <div 
+              onClick={() => setIsGiftPack(!isGiftPack)}
+              className={`flex items-center justify-between p-5 border rounded-sm cursor-pointer transition-all ${
+                isGiftPack 
+                ? 'border-[var(--color-gold)] bg-[var(--color-gold)]/5' 
+                : 'border-white/10 bg-black/40'
+              }`}
+            >
+              <div className="flex items-center gap-4">
+                <div className={`w-5 h-5 border flex items-center justify-center transition-colors ${
+                  isGiftPack ? 'border-[var(--color-gold)] bg-[var(--color-gold)]' : 'border-white/20'
+                }`}>
+                  {isGiftPack && <div className="w-2 h-2 bg-black rounded-full" />}
+                </div>
+                <div>
+                  <div className="text-white tracking-wide">Add Gift Pack / Wrap</div>
+                  <div className="text-gray-500 text-xs tracking-widest uppercase mt-1">Perfect for presents</div>
+                </div>
               </div>
-            )}
+              <div className="text-[var(--color-gold)] font-medium">+ PKR {GIFT_PACK_PRICE}</div>
+            </div>
           </div>
 
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-t border-white/10 pt-6">
-            <div>
-              <div className="text-xs uppercase tracking-[0.25em] text-gray-500">Total</div>
-              <div className="text-2xl font-serif text-white tracking-widest">
-                ${getCartTotal().toFixed(2)}
+          <div>
+            <h2 className="text-xs uppercase tracking-[0.25em] text-gray-500 mb-4">
+              Payment Method
+            </h2>
+            <div className="grid grid-cols-1 gap-4">
+              <div className="text-left p-5 border rounded-sm transition-colors border-[var(--color-gold)] bg-[var(--color-gold)]/5">
+                <div className="text-white tracking-wide">Cash on Delivery</div>
+                <div className="text-gray-500 text-xs tracking-widest uppercase mt-1">Pay at arrival</div>
               </div>
             </div>
+          </div>
 
-            <Button size="lg" disabled={!canSubmit} onClick={submit} className="w-full md:w-auto min-w-[220px]">
-              {loading ? (
-                <>
-                  <Loader2 className="animate-spin" />
-                  Processing…
-                </>
-              ) : paymentMethod === 'COD' ? (
-                'Place Order'
-              ) : (
-                'Pay Securely'
-              )}
-            </Button>
+          <div className="border-t border-white/10 pt-6 space-y-3">
+            <div className="flex justify-between text-xs uppercase tracking-widest text-gray-500">
+              <span>Subtotal</span>
+              <span>PKR {getCartSubtotal().toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-xs uppercase tracking-widest text-gray-500">
+              <span>Delivery</span>
+              <span className={getDeliveryCharges() === 0 ? "text-green-500" : ""}>
+                {getDeliveryCharges() === 0 ? 'FREE' : `PKR ${getDeliveryCharges().toFixed(2)}`}
+              </span>
+            </div>
+            {getDiscount() > 0 && (
+              <div className="flex justify-between text-xs uppercase tracking-widest text-green-500">
+                <span>Discount (10% OFF)</span>
+                <span>-PKR {getDiscount().toFixed(2)}</span>
+              </div>
+            )}
+            {isGiftPack && (
+              <div className="flex justify-between text-xs uppercase tracking-widest text-[var(--color-gold)]">
+                <span>Gift Pack Fee</span>
+                <span>PKR {GIFT_PACK_PRICE.toFixed(2)}</span>
+              </div>
+            )}
+            
+            <div className="flex items-center justify-between pt-4 border-t border-white/5">
+              <div>
+                <div className="text-xs uppercase tracking-[0.25em] text-gray-500">Total</div>
+                <div className="text-2xl font-serif text-white tracking-widest">
+                  PKR {(getCartTotal() + (isGiftPack ? GIFT_PACK_PRICE : 0)).toFixed(2)}
+                </div>
+              </div>
+
+              <Button size="lg" disabled={!canSubmit} onClick={submit} className="w-full md:w-auto min-w-[220px]">
+                {loading ? (
+                  <>
+                    <Loader2 className="animate-spin" />
+                    Processing…
+                  </>
+                ) : (
+                  'Place Order'
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
     </section>
   );
 }
-
-export default function CheckoutPage() {
-  return (
-    <Elements stripe={paymentClient}>
-      <CheckoutInner />
-    </Elements>
-  );
-}
-

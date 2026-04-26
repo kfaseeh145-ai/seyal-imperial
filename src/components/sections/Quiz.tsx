@@ -7,26 +7,26 @@ import { Button } from '@/components/ui/Button';
 const questions = [
     {
         id: 1,
-        question: "What is your desired presence?",
+        question: "What vibe do you prefer?",
         options: [
-            { label: "Commanding & Powerful", value: "sheikh" },
-            { label: "Regal & Elegant", value: "femme" },
+            { label: "Calm & elegant", value: "A" },
+            { label: "Bold & attention-grabbing", value: "B" },
         ]
     },
     {
         id: 2,
-        question: "When will you wear this fragrance?",
+        question: "What kind of scent do you like?",
         options: [
-            { label: "Evenings & Special Occasions", value: "sheikh" },
-            { label: "Daytime Signatures", value: "femme" },
+            { label: "Floral / clean", value: "A" },
+            { label: "Oud / woody", value: "B" },
         ]
     },
     {
         id: 3,
-        question: "Which scent profile draws you in?",
+        question: "What impression do you want to leave?",
         options: [
-            { label: "Deep Oud & Rich Woods", value: "sheikh" },
-            { label: "Delicate Florals & Sweet Amber", value: "femme" },
+            { label: "Grace & charm", value: "A" },
+            { label: "Power & presence", value: "B" },
         ]
     }
 ];
@@ -48,10 +48,25 @@ export function Quiz() {
     };
 
     const getResult = () => {
-        const sheikhCount = answers.filter(a => a === "sheikh").length;
-        return sheikhCount > 1
-            ? { name: "Signature Sheikh", desc: "For those who command the room. A masterpiece of dark oud and spices." }
-            : { name: "Femme Royale", desc: "For the epitome of grace. A symphony of bright florals and warm amber." };
+        const countA = answers.filter(a => a === "A").length;
+        const countB = answers.filter(a => a === "B").length;
+
+        if (countA === 3) {
+            return { 
+                name: "Femme Royale", 
+                desc: "The epitome of majestic elegance. A symphony of bright florals and warm amber for those who value grace and charm." 
+            };
+        } else if (countB === 3) {
+            return { 
+                name: "Imperial Oud", 
+                desc: "The pinnacle of power. A deep, commanding blend of pure oud and dark woods for a presence that cannot be ignored." 
+            };
+        } else {
+            return { 
+                name: "Signature Sheikh", 
+                desc: "A perfect balance of command and sophistication. A masterpiece of rich oud blended with spicy cardamom and leather." 
+            };
+        }
     };
 
     const resetQuiz = () => {

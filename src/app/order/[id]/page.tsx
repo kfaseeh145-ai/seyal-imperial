@@ -24,6 +24,7 @@ export default function OrderReceiptPage() {
   const orderId = params?.id;
 
   useEffect(() => {
+    if (!isInitialized) return; // Wait for auth to initialize
     if (!isAuthenticated || !user?.token) {
       router.push('/login');
       return;
@@ -34,12 +35,8 @@ export default function OrderReceiptPage() {
       setLoading(true);
       setError('');
       try {
-        const res = await fetch(`${apiBase}/orders/${orderId}`, {
-          headers: {
-            Authorization: `Bearer ${user.token}`,
-          },
-        });
-        const data: unknown = await res.json();
+        const res = await fetch(`/api/orders/${orderId}`);
+        const data: any = await res.json();
         if (!res.ok) {
           const message =
             typeof data === 'object' && data !== null && 'message' in data
@@ -66,7 +63,7 @@ export default function OrderReceiptPage() {
             Order <span className="text-[var(--color-gold)] italic">Receipt</span>
           </h1>
           <p className="text-gray-500 text-xs uppercase tracking-[0.35em] mt-2">
-            Reference: {orderId ? String(orderId).slice(-8) : '—'}
+            Reference: {orderId ? String(orderId).substring(0, 8).toUpperCase() : '—'}
           </p>
         </header>
 
@@ -91,17 +88,17 @@ export default function OrderReceiptPage() {
                 <div className="mt-2">
                   <span
                     className={`px-3 py-1 rounded-full text-[10px] uppercase tracking-widest shadow-sm ${
-                      o?.isPaid
+                      o?.is_paid
                         ? 'bg-green-500/10 text-green-400 border border-green-500/20'
                         : 'bg-red-500/10 text-red-400 border border-red-500/20'
                     }`}
                   >
-                    {o?.isPaid ? 'Secure' : 'Pending'}
+                    {o?.is_paid ? 'Secure' : 'Pending'}
                   </span>
                 </div>
               </div>
 
-              {o?.isPaid && (
+              {o?.is_paid && (
                 <div className="flex items-center gap-2 text-green-400">
                   <ShieldCheck className="w-5 h-5" />
                   <span className="text-xs uppercase tracking-widest">Payment captured</span>
@@ -113,7 +110,7 @@ export default function OrderReceiptPage() {
               <div className="text-xs uppercase tracking-[0.25em] text-gray-500 mb-3">Items</div>
               <div className="space-y-4">
                 {o?.orderItems?.map((it: any) => (
-                  <div key={it._id || it.product || it.name} className="flex items-center justify-between gap-4 border border-white/10 bg-black/30 rounded-sm p-4">
+                  <div key={it.id || it.product_id || it.name} className="flex items-center justify-between gap-4 border border-white/10 bg-black/30 rounded-sm p-4">
                     <div className="flex items-center gap-4 min-w-0">
                       <img src={it.image} alt={it.name} className="w-14 h-16 object-contain bg-black border border-white/5 rounded p-2" />
                       <div className="min-w-0">
@@ -122,7 +119,7 @@ export default function OrderReceiptPage() {
                       </div>
                     </div>
                     <div className="text-[var(--color-gold-light)] font-mono text-sm">
-                      ${(Number(it.price) * Number(it.qty)).toFixed(2)}
+                      PKR {(Number(it.price) * Number(it.qty)).toFixed(2)}
                     </div>
                   </div>
                 ))}
@@ -133,22 +130,24 @@ export default function OrderReceiptPage() {
               <div>
                 <div className="text-xs uppercase tracking-[0.25em] text-gray-500 mb-2">Shipping</div>
                 <div className="text-sm text-gray-300 leading-relaxed">
-                  <div>{o?.shippingAddress?.address}</div>
+                  <div>{o?.shipping_address?.address}</div>
+                  <div>{o?.shipping_address?.phone}</div>
                   <div>
-                    {o?.shippingAddress?.city} {o?.shippingAddress?.postalCode}
+                    {o?.shipping_address?.city} {o?.shipping_address?.postalCode}
                   </div>
-                  <div>{o?.shippingAddress?.country}</div>
+                  <div>{o?.shipping_address?.country}</div>
                 </div>
               </div>
               <div className="md:text-right">
                 <div className="text-xs uppercase tracking-[0.25em] text-gray-500 mb-2">Total</div>
                 <div className="text-3xl font-serif text-white tracking-widest">
-                  ${Number(o?.totalPrice || 0).toFixed(2)}
+                  PKR {Number(o?.total_price || 0).toFixed(2)}
                 </div>
                 <div className="text-gray-500 text-xs tracking-widest uppercase mt-2">
-                  Method: {o?.paymentMethod || '—'}
+                  Method: {o?.payment_method || '—'}
                 </div>
               </div>
+
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3">

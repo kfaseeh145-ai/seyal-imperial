@@ -4,21 +4,23 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { useCart } from '@/store/useCart';
+import Link from 'next/link';
 
 export default function ProductDetails({ product }: { product: any }) {
     const [isZoomed, setIsZoomed] = useState(false);
+    const [quantity, setQuantity] = useState(1);
     const { addItem, setIsOpen } = useCart();
 
     const handleAddToCart = () => {
         addItem({
             id: product._id || product.id,
             name: product.name,
-            price: Number(product.price.toString().replace('$', '')),
+            price: Number(product.price.toString().replace('PKR ', '')),
             displayPrice: product.price.toString(),
             imageUrl: product.imageUrl,
-            quantity: 1,
+            quantity: quantity,
         });
-        setIsOpen(true); // Open the drawer so user sees carting details effortlessly
+        setIsOpen(true);
     };
 
     return (
@@ -33,31 +35,27 @@ export default function ProductDetails({ product }: { product: any }) {
                     onClick={() => setIsZoomed(!isZoomed)}
                     onMouseLeave={() => setIsZoomed(false)}
                 >
-                    {/* Animated Mist Background */}
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(201,169,110,0.25)_0%,transparent_70%)] animate-pulse z-0" />
+                    
                     <div
-                        className="absolute inset-0 z-0 opacity-50 blur-3xl animate-pulse"
-                        style={{ background: `radial-gradient(circle at center, ${product.mistColor} 0%, transparent 70%)` }}
-                    />
-                    <div
-                        className="absolute inset-0 z-0 transition-transform duration-1000"
+                        className="absolute inset-0 z-0 transition-transform duration-1000 opacity-20"
                         style={{ background: product.imagePlaceholder }}
                     />
 
-                    {/* Product Image */}
                     <motion.div
                         animate={{ scale: isZoomed ? 1.5 : 1 }}
                         transition={{ type: "spring", stiffness: 100, damping: 20 }}
-                        className="relative z-10 w-full h-[80%] flex items-center justify-center mix-blend-screen drop-shadow-2xl pointer-events-none"
+                        className="relative z-10 w-full h-full flex items-center justify-center drop-shadow-2xl"
                     >
                         <img
-                            src={product.imageUrl}
+                            src={product.imageUrl || '/images/hero.png'}
                             alt={product.name}
-                            className="h-full object-contain"
+                            className="w-full h-full object-contain p-4"
                         />
                     </motion.div>
 
                     {!isZoomed && (
-                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[10px] uppercase text-gray-500 tracking-[0.2em] opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[10px] uppercase text-gray-400 tracking-[0.2em] opacity-0 group-hover:opacity-100 transition-opacity">
                             Click to Zoom
                         </div>
                     )}
@@ -99,10 +97,36 @@ export default function ProductDetails({ product }: { product: any }) {
                         </div>
                     </div>
 
-                    <div className="pt-8">
-                        <Button size="lg" className="w-full md:w-auto min-w-[200px]" onClick={handleAddToCart}>
+                    <div className="pt-8 flex flex-col sm:flex-row items-center gap-6">
+                        <div className="flex items-center border border-white/10 rounded-sm h-14">
+                            <button 
+                                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                                className="px-5 h-full text-gray-400 hover:text-white transition-colors border-r border-white/5"
+                            >
+                                −
+                            </button>
+                            <span className="w-12 text-center text-white font-medium">{quantity}</span>
+                            <button 
+                                onClick={() => setQuantity(quantity + 1)}
+                                className="px-5 h-full text-gray-400 hover:text-white transition-colors border-l border-white/5"
+                            >
+                                +
+                            </button>
+                        </div>
+
+                        <Button size="lg" className="w-full md:w-auto min-w-[200px] h-14" onClick={handleAddToCart}>
                             Add to Cart
                         </Button>
+                    </div>
+                    
+                    <div className="pt-6 border-t border-white/5 flex flex-col gap-2">
+                        <p className="text-[10px] uppercase tracking-widest text-gray-500">Need Assistance?</p>
+                        <Link 
+                            href="mailto:seyalimperial@gmail.com" 
+                            className="text-sm text-[var(--color-gold-light)] hover:text-white transition-colors"
+                        >
+                            seyalimperial@gmail.com
+                        </Link>
                     </div>
                 </div>
             </motion.div>

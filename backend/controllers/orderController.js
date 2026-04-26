@@ -1,5 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const Order = require('../models/Order');
+const User = require('../models/User');
+const sendEmail = require('../utils/sendEmail');
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -9,6 +11,7 @@ const addOrderItems = asyncHandler(async (req, res) => {
     orderItems,
     shippingAddress,
     paymentMethod,
+    isGiftPack,
     totalPrice,
   } = req.body;
 
@@ -21,10 +24,34 @@ const addOrderItems = asyncHandler(async (req, res) => {
       user: req.user._id,
       shippingAddress,
       paymentMethod,
+      isGiftPack,
       totalPrice,
     });
 
     const createdOrder = await order.save();
+    
+    // Send Order Confirmation Email
+    const user = await User.findById(req.user._id);
+    if (user) {
+      await sendEmail({
+        to: user.email,
+        subject: `Seyal Imperial - Order Confirmed #${createdOrder._id.toString().slice(-6).toUpperCase()}`,
+        html: `
+          <div style="font-family: serif; color: #111; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #c9a96e; text-align: center;">
+            <h1 style="color: #c9a96e; text-transform: uppercase; letter-spacing: 3px;">Order Confirmed</h1>
+            <p>Your journey with Seyal Imperial has begun.</p>
+            <div style="margin: 30px 0; padding: 20px; background: #fafafa; border-radius: 4px; text-align: left;">
+              <p><strong>Order ID:</strong> #${createdOrder._id}</p>
+              <p><strong>Total Amount:</strong> PKR ${createdOrder.totalPrice.toFixed(2)}</p>
+              <p><strong>Status:</strong> Processing</p>
+              ${createdOrder.isGiftPack ? '<p style="color: #c9a96e;"><strong>✨ Included:</strong> Premium Gift Pack</p>' : ''}
+            </div>
+            <p style="color: #666; font-size: 14px;">We are currently preparing your royal collection. You will receive another update once it's dispatched.</p>
+          </div>
+        `
+      });
+    }
+
     res.status(201).json(createdOrder);
   }
 });
@@ -51,61 +78,6 @@ const getOrderById = asyncHandler(async (req, res) => {
   res.json(order);
 });
 
-// @desc    Create card payment intent for an order (embedded card form)
-// @route   POST /api/orders/:id/payment-intent
-// @access  Private (owner/admin)
-const createPaymentIntentForOrder = asyncHandler(async (req, res) => {
-  const Stripe = require('stripe');
-
-  if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY.includes('your_stripe_secret_key')) {
-    res.status(400);
-    throw new Error('Payment processor is not configured');
-  }
-
-  const order = await Order.findById(req.params.id);
-
-  if (!order) {
-    res.status(404);
-    throw new Error('Order not found');
-  }
-
-  const isOwner = order.user && req.user && order.user.toString() === req.user._id.toString();
-  const isAdmin = req.user && req.user.role === 'admin';
-
-  if (!isOwner && !isAdmin) {
-    res.status(403);
-    throw new Error('Not authorized to pay for this order');
-  }
-
-  if (order.isPaid) {
-    return res.json({ alreadyPaid: true });
-  }
-
-  const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
-  const amount = Math.round(Number(order.totalPrice || 0) * 100);
-  if (!amount || amount < 50) {
-    res.status(400);
-    throw new Error('Invalid order total');
-  }
-
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount,
-    currency: 'usd',
-    metadata: { orderId: order._id.toString() },
-    automatic_payment_methods: { enabled: true },
-  });
-
-  order.paymentResult = {
-    ...(order.paymentResult || {}),
-    id: paymentIntent.id,
-    status: paymentIntent.status,
-    update_time: new Date().toISOString(),
-  };
-  await order.save();
-
-  res.json({ clientSecret: paymentIntent.client_secret });
-});
-
 // @desc    Update order to paid
 // @route   PUT /api/orders/:id/pay
 // @access  Private
@@ -125,155 +97,26 @@ const updateOrderToPaid = asyncHandler(async (req, res) => {
     throw new Error('Not authorized to update this order');
   }
 
-  if (!order.isPaid) {
-    order.isPaid = true;
-    order.paidAt = Date.now();
-    order.orderStatus = order.orderStatus === 'Pending' ? 'Processing' : order.orderStatus;
-  }
-
   const paymentResult = req.body?.paymentResult || {};
   const sessionId = req.body?.session_id || req.body?.sessionId;
 
-  order.paymentResult = {
-    id: paymentResult.id || sessionId || order.paymentResult?.id,
-    status: paymentResult.status || 'succeeded',
-    update_time: paymentResult.update_time || new Date().toISOString(),
-    email_address: paymentResult.email_address || order.paymentResult?.email_address,
-  };
+  const updatedOrder = await Order.findByIdAndUpdate(
+    req.params.id,
+    {
+      isPaid: true,
+      paidAt: Date.now(),
+      orderStatus: order.orderStatus === 'Pending' ? 'Processing' : order.orderStatus,
+      paymentResult: {
+        id: paymentResult.id || sessionId || order.paymentResult?.id,
+        status: paymentResult.status || 'succeeded',
+        update_time: paymentResult.update_time || new Date().toISOString(),
+        email_address: paymentResult.email_address || order.paymentResult?.email_address,
+      }
+    },
+    { new: true, runValidators: false }
+  );
 
-  const updatedOrder = await order.save();
   res.json(updatedOrder);
-});
-
-// @desc    Create Stripe checkout session for an order
-// @route   POST /api/orders/:id/stripe-session
-// @access  Private (owner/admin)
-const createStripeSessionForOrder = asyncHandler(async (req, res) => {
-  const Stripe = require('stripe');
-
-  if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY.includes('your_stripe_secret_key')) {
-    res.status(400);
-    throw new Error('Stripe is not configured');
-  }
-
-  const order = await Order.findById(req.params.id);
-
-  if (!order) {
-    res.status(404);
-    throw new Error('Order not found');
-  }
-
-  const isOwner = order.user && req.user && order.user.toString() === req.user._id.toString();
-  const isAdmin = req.user && req.user.role === 'admin';
-
-  if (!isOwner && !isAdmin) {
-    res.status(403);
-    throw new Error('Not authorized to pay for this order');
-  }
-
-  if (order.isPaid) {
-    return res.json({ url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/order/${order._id}` });
-  }
-
-  const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
-
-  const lineItems = order.orderItems.map((item) => ({
-    price_data: {
-      currency: 'usd',
-      product_data: { name: item.name },
-      unit_amount: Math.round(item.price * 100),
-    },
-    quantity: item.qty,
-  }));
-
-  const session = await stripe.checkout.sessions.create({
-    payment_method_types: ['card'],
-    line_items: lineItems,
-    mode: 'payment',
-    success_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/success?session_id={CHECKOUT_SESSION_ID}&orderId=${order._id}`,
-    cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/checkout`,
-    metadata: {
-      orderId: order._id.toString(),
-    },
-  });
-
-  // Store Stripe session id for later verification/debug
-  order.paymentResult = {
-    ...(order.paymentResult || {}),
-    id: session.id,
-    status: 'created',
-    update_time: new Date().toISOString(),
-  };
-  await order.save();
-
-  res.json({ url: session.url, sessionId: session.id });
-});
-
-// @desc    Stripe webhook handler (marks orders paid)
-// @route   POST /api/orders/stripe/webhook
-// @access  Public (Stripe signed)
-const stripeWebhook = asyncHandler(async (req, res) => {
-  const Stripe = require('stripe');
-  const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
-
-  const sig = req.headers['stripe-signature'];
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-  if (!webhookSecret) {
-    res.status(500);
-    throw new Error('Missing STRIPE_WEBHOOK_SECRET');
-  }
-
-  let event;
-  try {
-    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
-  } catch (err) {
-    res.status(400);
-    throw new Error(`Webhook signature verification failed: ${err.message}`);
-  }
-
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object;
-    const orderId = session?.metadata?.orderId;
-
-    if (orderId) {
-      const order = await Order.findById(orderId);
-      if (order && !order.isPaid) {
-        order.isPaid = true;
-        order.paidAt = Date.now();
-        order.orderStatus = order.orderStatus === 'Pending' ? 'Processing' : order.orderStatus;
-        order.paymentResult = {
-          id: session.id,
-          status: session.payment_status || 'paid',
-          update_time: new Date().toISOString(),
-          email_address: session.customer_details?.email,
-        };
-        await order.save();
-      }
-    }
-  }
-
-  if (event.type === 'payment_intent.succeeded') {
-    const pi = event.data.object;
-    const orderId = pi?.metadata?.orderId;
-    if (orderId) {
-      const order = await Order.findById(orderId);
-      if (order && !order.isPaid) {
-        order.isPaid = true;
-        order.paidAt = Date.now();
-        order.orderStatus = order.orderStatus === 'Pending' ? 'Processing' : order.orderStatus;
-        order.paymentResult = {
-          id: pi.id,
-          status: pi.status || 'succeeded',
-          update_time: new Date().toISOString(),
-          email_address: order.paymentResult?.email_address,
-        };
-        await order.save();
-      }
-    }
-  }
-
-  res.json({ received: true });
 });
 
 // @desc    Get logged in user orders
@@ -292,94 +135,71 @@ const getOrders = asyncHandler(async (req, res) => {
   res.json(orders);
 });
 
-const createCheckoutSession = asyncHandler(async (req, res) => {
-  const Stripe = require('stripe');
+// @desc    Update order to delivered/completed
+// @route   PUT /api/orders/:id/deliver
+// @access  Private/Admin
+const updateOrderToCompleted = asyncHandler(async (req, res) => {
+  const order = await Order.findById(req.params.id);
 
-  // NOTE: Legacy endpoint. New flow uses:
-  // - POST /api/orders (create order)
-  // - POST /api/orders/:id/stripe-session (pay)
+  if (order) {
+    const updatedOrder = await Order.findByIdAndUpdate(
+      req.params.id,
+      {
+        isPaid: true,
+        paidAt: order.paidAt || Date.now(),
+        isDelivered: true,
+        deliveredAt: Date.now(),
+        orderStatus: 'Completed',
+      },
+      { new: true, runValidators: false }
+    ).populate('user', 'name email');
 
-  // Simulated mode fallback when Stripe keys missing
-  if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY.includes('your_stripe_secret_key')) {
-    // Create a dummy order for simulation purposes
-    const { orderItems, shippingAddress, totalPrice } = req.body;
-    if (!shippingAddress) {
-      res.status(400);
-      throw new Error('Missing shippingAddress');
+    // Send Order Dispatched/Completed Email
+    if (updatedOrder && updatedOrder.user) {
+      await sendEmail({
+        to: updatedOrder.user.email,
+        subject: `Seyal Imperial - Your Order has been Dispatched!`,
+        html: `
+          <div style="font-family: serif; color: #111; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #c9a96e; text-align: center;">
+            <h1 style="color: #c9a96e; text-transform: uppercase; letter-spacing: 3px;">Order Dispatched</h1>
+            <p>Your signature of elegance is on its way.</p>
+            <div style="margin: 30px 0; padding: 20px; background: #000; color: #fff; border-radius: 4px;">
+              <p style="margin: 0;">Order #${updatedOrder._id.toString().slice(-6).toUpperCase()} is now officially dispatched.</p>
+            </div>
+            <p style="color: #666; font-size: 14px;">Thank you for choosing Seyal Imperial. We hope you enjoy your new fragrance.</p>
+          </div>
+        `
+      });
     }
-    const simulatedOrder = new Order({
-      orderItems,
-      user: req.user._id,
-      shippingAddress,
-      paymentMethod: 'Simulated',
-      totalPrice: typeof totalPrice === 'number'
-        ? totalPrice
-        : orderItems.reduce((sum, i) => sum + i.price * i.qty, 0),
-      isPaid: false,
-    });
-    await simulatedOrder.save();
-    return res.status(200).json({ url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/success?simulated=true&orderId=${simulatedOrder._id}` });
+
+    res.json(updatedOrder);
+  } else {
+    res.status(404);
+    throw new Error('Order not found');
   }
+});
 
-  const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
-  const { orderItems, shippingAddress, totalPrice } = req.body;
+// @desc    Delete order
+// @route   DELETE /api/orders/:id
+// @access  Private/Admin
+const deleteOrder = asyncHandler(async (req, res) => {
+  const order = await Order.findById(req.params.id);
 
-  if (!orderItems || orderItems.length === 0) {
-    res.status(400);
-    throw new Error('No order items');
-  }
-  if (!shippingAddress) {
-    res.status(400);
-    throw new Error('Missing shippingAddress');
-  }
-
-  // Create an order document first (payment pending)
-  const order = new Order({
-    orderItems,
-    user: req.user._id,
-    shippingAddress,
-    paymentMethod: 'Stripe',
-    totalPrice: typeof totalPrice === 'number'
-      ? totalPrice
-      : orderItems.reduce((sum, i) => sum + i.price * i.qty, 0),
-    isPaid: false,
-  });
-  const createdOrder = await order.save();
-
-  const lineItems = orderItems.map(item => ({
-    price_data: {
-      currency: 'usd',
-      product_data: { name: item.name },
-      unit_amount: Math.round(item.price * 100),
-    },
-    quantity: item.qty,
-  }));
-
-  try {
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: lineItems,
-      mode: 'payment',
-      success_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/success?session_id={CHECKOUT_SESSION_ID}&orderId=${createdOrder._id}`,
-      cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/`,
-    });
-    res.json({ url: session.url });
-  } catch (error) {
-    // Clean up order if Stripe fails
-    await Order.findByIdAndDelete(createdOrder._id);
-    res.status(500);
-    throw new Error(error.message);
+  if (order) {
+    await order.deleteOne();
+    res.json({ message: 'Order removed' });
+  } else {
+    res.status(404);
+    throw new Error('Order not found');
   }
 });
 
 module.exports = {
   addOrderItems,
   getOrderById,
-  createPaymentIntentForOrder,
   updateOrderToPaid,
-  createStripeSessionForOrder,
-  stripeWebhook,
   getMyOrders,
   getOrders,
-  createCheckoutSession,
+  updateOrderToCompleted,
+  deleteOrder,
 };
