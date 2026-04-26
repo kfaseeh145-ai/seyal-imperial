@@ -78,12 +78,12 @@ export function BrandStory() {
                     <div className="pt-8 pt-border-t border-white/10">
                         <div className="grid grid-cols-2 gap-8">
                             <div>
-                                <p className="text-3xl font-serif text-white mb-2">48<span className="text-[var(--color-gold)]">%</span></p>
+                                <p className="text-3xl font-serif text-white mb-2">45<span className="text-[var(--color-gold)]">%</span></p>
                                 <p className="text-xs tracking-[0.2em] text-gray-500 uppercase">Oil Concentration</p>
                             </div>
 
                             <div>
-                                <p className="text-3xl font-serif text-white mb-2">12<span className="text-[var(--color-gold)]">+</span></p>
+                                <p className="text-3xl font-serif text-white mb-2">24<span className="text-[var(--color-gold)]">+</span></p>
                                 <p className="text-xs tracking-[0.2em] text-gray-500 uppercase">Hours of Longevity</p>
                             </div>
                         </div>
