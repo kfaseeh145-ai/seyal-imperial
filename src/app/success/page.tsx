@@ -8,9 +8,11 @@ import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/store/useAuth';
 import { useCart } from '@/store/useCart';
 
+import { Suspense } from 'react';
+
 type ReceiptState = 'confirming' | 'confirmed' | 'needs_login' | 'error';
 
-export default function SuccessPage() {
+function SuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, isAuthenticated } = useAuth();
@@ -107,7 +109,6 @@ export default function SuccessPage() {
       setState('error');
       setMessage(err instanceof Error ? err.message : 'Unable to confirm payment.');
     }
-
   };
 
   useEffect(() => {
@@ -210,4 +211,17 @@ export default function SuccessPage() {
     </section>
   );
 }
+
+export default function SuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center text-[var(--color-gold)]">
+        <Loader2 className="w-10 h-10 animate-spin" />
+      </div>
+    }>
+      <SuccessContent />
+    </Suspense>
+  );
+}
+
 
