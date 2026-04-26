@@ -49,9 +49,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }
-
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
-    // This would be for admin to delete reviews
-    // Since this is a simple route, I'll put it here or in a dynamic route later if needed.
-    return NextResponse.json({ message: 'Not implemented' }, { status: 501 });
-}
