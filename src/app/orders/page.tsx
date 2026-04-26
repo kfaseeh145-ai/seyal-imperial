@@ -32,9 +32,10 @@ export default function MyOrdersPage() {
 
     const run = async () => {
       setLoading(true);
-      setError('');
+      if (!user?.id) return;
       try {
         const res = await fetch(`/api/orders/my/${user.id}`);
+
         const data: any = await res.json();
         if (!res.ok) {
           const message =
