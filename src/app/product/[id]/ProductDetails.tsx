@@ -127,6 +127,14 @@ export default function ProductDetails({ product }: { product: any }) {
                         >
                             seyalimperial@gmail.com
                         </Link>
+                        <Link 
+                            href="https://wa.me/923019123717"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-[var(--color-gold-light)] hover:text-white transition-colors"
+                        >
+                            WhatsApp: +92 301 9123717
+                        </Link>
                     </div>
                 </div>
             </motion.div>

@@ -52,6 +52,14 @@ export function Footer() {
                     >
                         seyalimperial@gmail.com
                     </a>
+                    <a 
+                        href="https://wa.me/923019123717" 
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-white hover:text-[var(--color-gold)] transition-colors tracking-widest text-sm"
+                    >
+                        WhatsApp: +92 301 9123717
+                    </a>
                 </div>
 
                 <div className="pt-8 border-t border-white/10 w-full max-w-md flex flex-col items-center gap-4">
