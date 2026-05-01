@@ -5,6 +5,7 @@ import { useAuth } from '@/store/useAuth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, Trash2, CheckCircle } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 export default function AdminDashboard() {
     const { user, isAuthenticated, isInitialized } = useAuth();
@@ -15,11 +16,14 @@ export default function AdminDashboard() {
     const markAsCompleted = async (id: string) => {
         if (!window.confirm('Mark this order as completed and paid?')) return;
         try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token || user?.token;
+
             const res = await fetch(`/api/orders/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${user?.token}`
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ isDelivered: true })
             });
@@ -39,10 +43,13 @@ export default function AdminDashboard() {
     const deleteOrder = async (id: string) => {
         if (!window.confirm('Are you sure you want to delete this order? This cannot be undone.')) return;
         try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token || user?.token;
+
             const res = await fetch(`/api/orders/${id}`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': `Bearer ${user?.token}`
+                    'Authorization': `Bearer ${token}`
                 }
             });
             const data = await res.json();

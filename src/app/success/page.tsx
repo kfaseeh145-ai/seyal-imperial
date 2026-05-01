@@ -7,6 +7,7 @@ import { Loader2, ShieldCheck, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/store/useAuth';
 import { useCart } from '@/store/useCart';
+import { supabase } from '@/lib/supabase';
 
 import { Suspense } from 'react';
 
@@ -43,13 +44,16 @@ function SuccessContent() {
     setMessage(simulated ? 'Simulating secure confirmation…' : 'Waiting for payment confirmation…');
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || user?.token;
+
       // Simulator/dev fallback: flip the order immediately if we're in simulated mode
       if (simulated) {
         const res = await fetch(`/api/orders/${orderId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${user.token}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             isPaid: true,
@@ -67,7 +71,7 @@ function SuccessContent() {
       // Real card flow: webhook marks isPaid. We poll the order until it flips.
       const poll = async () => {
         const res = await fetch(`/api/orders/${orderId}`, {
-          headers: { Authorization: `Bearer ${user.token}` },
+          headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data?.message || 'Unable to fetch order status.');
