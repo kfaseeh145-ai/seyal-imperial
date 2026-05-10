@@ -45,7 +45,7 @@ export function Footer() {
                 </div>
 
                 <div className="flex flex-col items-center gap-2">
-                    <p className="text-[10px] uppercase tracking-[0.3em] text-[var(--color-gold)]">Contact Us</p>
+                    <Link href="/contact-us" className="text-[10px] uppercase tracking-[0.3em] text-[var(--color-gold)] hover:text-white transition-colors">Contact Us</Link>
                     <a 
                         href="mailto:seyalimperial@gmail.com" 
                         className="text-white hover:text-[var(--color-gold)] transition-colors tracking-widest text-sm"
@@ -67,8 +67,8 @@ export function Footer() {
                         © {new Date().getFullYear()} Seyal Imperial. All rights reserved.
                     </p>
                     <div className="flex gap-4">
-                        <Link href="#" className="text-xs text-gray-600 hover:text-white transition-colors">Privacy Policy</Link>
-                        <Link href="#" className="text-xs text-gray-600 hover:text-white transition-colors">Terms of Service</Link>
+                        <Link href="/privacy-policy" className="text-xs text-gray-600 hover:text-white transition-colors">Privacy Policy</Link>
+                        <Link href="/terms-conditions" className="text-xs text-gray-600 hover:text-white transition-colors">Terms & Conditions</Link>
                     </div>
                 </div>
             </div>
