@@ -17,8 +17,7 @@ export function CartDrawer() {
     updateQuantity, 
     getCartTotal, 
     getCartSubtotal, 
-    getDeliveryCharges, 
-    getDiscount 
+    getDeliveryCharges
   } = useCart();
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
@@ -136,12 +135,6 @@ export function CartDrawer() {
                       {getDeliveryCharges() === 0 ? 'FREE' : `PKR ${getDeliveryCharges().toFixed(2)}`}
                     </span>
                   </div>
-                  {getDiscount() > 0 && (
-                    <div className="flex justify-between text-[10px] uppercase tracking-widest text-green-500">
-                      <span>Discount (10% OFF)</span>
-                      <span>-PKR {getDiscount().toFixed(2)}</span>
-                    </div>
-                  )}
                 </div>
 
                 <div className="flex items-center justify-between mb-6">

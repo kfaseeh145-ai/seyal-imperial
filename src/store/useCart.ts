@@ -21,7 +21,6 @@ interface CartStore {
   clearCart: () => void;
   getCartSubtotal: () => number;
   getDeliveryCharges: () => number;
-  getDiscount: () => number;
   getCartTotal: () => number;
 }
 
@@ -64,15 +63,8 @@ export const useCart = create<CartStore>()(
         if (totalQuantity === 0) return 0;
         return totalQuantity === 1 ? 250 : 0;
       },
-      getDiscount: () => {
-        const totalQuantity = get().items.reduce((total, item) => total + item.quantity, 0);
-        if (totalQuantity >= 3) {
-          return get().getCartSubtotal() * 0.10;
-        }
-        return 0;
-      },
       getCartTotal: () => {
-        return get().getCartSubtotal() + get().getDeliveryCharges() - get().getDiscount();
+        return get().getCartSubtotal() + get().getDeliveryCharges();
       },
     }),
     {

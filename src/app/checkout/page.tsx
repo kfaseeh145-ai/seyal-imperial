@@ -24,7 +24,6 @@ export default function CheckoutPage() {
     getCartTotal, 
     getCartSubtotal, 
     getDeliveryCharges, 
-    getDiscount, 
     clearCart 
   } = useCart();
 
@@ -297,12 +296,6 @@ export default function CheckoutPage() {
                 {getDeliveryCharges() === 0 ? 'FREE' : `PKR ${getDeliveryCharges().toFixed(2)}`}
               </span>
             </div>
-            {getDiscount() > 0 && (
-              <div className="flex justify-between text-xs uppercase tracking-widest text-green-500">
-                <span>Discount (10% OFF)</span>
-                <span>-PKR {getDiscount().toFixed(2)}</span>
-              </div>
-            )}
             {isGiftPack && (
               <div className="flex justify-between text-xs uppercase tracking-widest text-[var(--color-gold)]">
                 <span>Gift Pack Fee</span>
