@@ -42,7 +42,17 @@ export default function RegisterPage() {
 
             if (authError) throw new Error(authError.message);
             
-            setEmailSent(true);
+            if (data?.session) {
+                login({
+                    id: data.user!.id,
+                    email: data.user!.email!,
+                    name: name,
+                    role: 'user'
+                });
+                router.push('/');
+            } else {
+                setEmailSent(true);
+            }
         } catch (err: any) {
             setError(err.message);
         } finally {
