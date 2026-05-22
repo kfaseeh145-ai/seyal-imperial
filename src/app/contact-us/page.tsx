@@ -28,6 +28,13 @@ export default function ContactUs() {
                 +92 301 9123717
               </a>
             </div>
+
+            <div>
+              <p className="text-gray-400 text-sm tracking-widest uppercase mb-1">Address</p>
+              <p className="text-white text-lg font-light max-w-md mx-auto leading-relaxed">
+                Fida Shaheed Road, Pull Sutri Watt, O/S Bohar gate, Multan, PK
+              </p>
+            </div>
           </div>
 
           <div className="pt-8 border-t border-white/10">

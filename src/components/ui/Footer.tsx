@@ -60,16 +60,20 @@ export function Footer() {
                     >
                         WhatsApp: +92 301 9123717
                     </a>
+                    <span className="text-gray-500 tracking-wider text-xs max-w-xs mt-1 leading-relaxed">
+                        Fida Shaheed Road, Pull Sutri Watt, O/S Bohar gate, Multan, PK
+                    </span>
                 </div>
 
-                <div className="pt-8 border-t border-white/10 w-full max-w-md flex flex-col items-center gap-4">
+                <div className="pt-8 border-t border-white/10 w-full max-w-lg flex flex-col items-center gap-4">
                     <p className="text-xs text-gray-600 uppercase tracking-widest">
                         © {new Date().getFullYear()} Seyal Imperial. All rights reserved.
                     </p>
-                    <div className="flex gap-4">
+                    <div className="flex flex-wrap justify-center gap-x-6 gap-y-2">
                         <Link href="/privacy-policy" className="text-xs text-gray-600 hover:text-white transition-colors">Privacy Policy</Link>
                         <Link href="/terms-conditions" className="text-xs text-gray-600 hover:text-white transition-colors">Terms & Conditions</Link>
                         <Link href="/refund-policy" className="text-xs text-gray-600 hover:text-white transition-colors">Refund Policy</Link>
+                        <Link href="/shipping-policy" className="text-xs text-gray-600 hover:text-white transition-colors">Shipping Policy</Link>
                     </div>
                 </div>
             </div>
